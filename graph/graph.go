@@ -4,8 +4,8 @@ package graph
 import (
 	"errors"
 	"fmt"
-	"github.com/0x626f/go-kit/pkg/abstract"
-	"github.com/0x626f/go-kit/pkg/utils"
+	"github.com/0x626f/go-kit/abstract"
+	"github.com/0x626f/go-kit/utils"
 )
 
 // Feature is a bitwise flag type used to configure graph properties.

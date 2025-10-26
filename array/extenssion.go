@@ -2,8 +2,8 @@
 package array
 
 import (
-	"github.com/0x626f/go-kit/pkg/abstract"
-	"github.com/0x626f/go-kit/pkg/utils"
+	"github.com/0x626f/go-kit/abstract"
+	"github.com/0x626f/go-kit/utils"
 )
 
 // IsSorted checks whether the array is sorted in either ascending or descending order

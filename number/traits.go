@@ -1,7 +1,7 @@
 // Package number provides arbitrary-precision numeric types and utilities.
 package number
 
-import "github.com/0x626f/go-kit/pkg/abstract"
+import "github.com/0x626f/go-kit/abstract"
 
 // IntegerField is a constraint interface that matches all built-in integer types.
 // This allows generic functions to operate on any integer type.

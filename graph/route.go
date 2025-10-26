@@ -1,7 +1,7 @@
 // Package graph provides implementations for graph data structures and algorithms.
 package graph
 
-import "github.com/0x626f/go-kit/pkg/abstract"
+import "github.com/0x626f/go-kit/abstract"
 
 // Route represents a path through a graph as an ordered sequence of vertices.
 // A route can be used to store the result of path-finding algorithms or to

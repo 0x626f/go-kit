@@ -1,7 +1,7 @@
 // Package set provides implementations for set data structures that maintain unique elements.
 package set
 
-import "github.com/0x626f/go-kit/pkg/abstract"
+import "github.com/0x626f/go-kit/abstract"
 
 // PrimarySet is a specialized set implementation that works with comparable types directly,
 // without requiring them to implement the Keyable interface. It internally wraps values

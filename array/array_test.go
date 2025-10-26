@@ -1,7 +1,7 @@
 package array
 
 import (
-	"github.com/0x626f/go-kit/pkg/number"
+	"github.com/0x626f/go-kit/number"
 	"testing"
 )
 

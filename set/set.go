@@ -2,8 +2,8 @@
 package set
 
 import (
-	"github.com/0x626f/go-kit/pkg/abstract"
-	"github.com/0x626f/go-kit/pkg/utils"
+	"github.com/0x626f/go-kit/abstract"
+	"github.com/0x626f/go-kit/utils"
 )
 
 // Set represents a collection of unique elements that implement the Keyable interface.

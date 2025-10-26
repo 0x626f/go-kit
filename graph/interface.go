@@ -2,7 +2,7 @@
 package graph
 
 import (
-	"github.com/0x626f/go-kit/pkg/abstract"
+	"github.com/0x626f/go-kit/abstract"
 )
 
 // BranchReceiver is a function type used for graph traversal algorithms.
