@@ -215,10 +215,10 @@ func (number *BigFloat) Add(arg *BigFloat) *BigFloat {
 	return obj
 }
 
-// Substruct subtracts the argument from this BigFloat and returns the result.
+// Subtract subtracts the argument from this BigFloat and returns the result.
 // If this instance is immutable, a new instance is created.
 // Implements part of the BigNumericField interface.
-func (number *BigFloat) Substruct(arg *BigFloat) *BigFloat {
+func (number *BigFloat) Subtract(arg *BigFloat) *BigFloat {
 	obj := forwardBigFloat(number)
 	obj.value.Sub(obj.value, arg.value)
 	return obj
@@ -287,6 +287,16 @@ func (number *BigFloat) Sign() int {
 // Implements the Comparable interface.
 func (number *BigFloat) Compare(arg *BigFloat) int {
 	return number.value.Cmp(arg.value)
+}
+
+// ToFloat converts this BigFloat to a float64 value.
+// Note that this may lose precision for very large numbers.
+// The conversion error is silently ignored.
+//
+// Returns the float64 approximation of this BigFloat.
+func (number *BigFloat) ToFloat() float64 {
+	value, _ := number.value.Float64()
+	return value
 }
 
 // String returns the string representation of this BigFloat.

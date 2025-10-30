@@ -179,7 +179,7 @@ func (number *BigInt) Add(arg *BigInt) *BigInt {
 // Substruct subtracts the argument from this BigInt and returns the result.
 // If this instance is immutable, a new instance is created.
 // Implements part of the BigNumericField interface.
-func (number *BigInt) Substruct(arg *BigInt) *BigInt {
+func (number *BigInt) Subtract(arg *BigInt) *BigInt {
 	obj := forwardBigInt(number)
 	obj.value.Sub(obj.value, arg.value)
 	return obj
@@ -357,7 +357,7 @@ func (number *BigInt) Xor(arg *BigInt) *BigInt {
 
 // Not performs a bitwise NOT operation (complement) and returns the result.
 // If this instance is immutable, a new instance is created.
-func (number *BigInt) Not(arg *BigInt) *BigInt {
+func (number *BigInt) Not() *BigInt {
 	obj := forwardBigInt(number)
 	obj.value.Not(obj.value)
 	return obj

@@ -48,7 +48,7 @@ type BigNumericField[T BigInt | BigFloat] interface {
 	// Basic arithmetic operations
 	// Each returns a new number or modifies the receiver if mutable
 	Add(*T) *T
-	Substruct(*T) *T
+	Subtract(*T) *T
 	Multiply(*T) *T
 	Divide(*T) *T
 
