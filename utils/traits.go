@@ -3,6 +3,57 @@
 // container operations to simplify Go code using generics.
 package utils
 
+import "reflect"
+
+// NewInstanceOf creates a new zero-initialized instance of type T and returns a pointer to it.
+// This function uses reflection to dynamically create an instance of any type provided as a
+// type parameter, which is particularly useful for generic code that needs to instantiate
+// types that aren't known until runtime.
+//
+// Type parameters:
+//   - T: Any type to create an instance of
+//
+// Returns:
+//   - *T: A pointer to a new zero-initialized instance of type T
+//
+// Example:
+//
+//	type Person struct {
+//	    Name string
+//	    Age  int
+//	}
+//
+//	// Create a new Person instance
+//	p := NewInstanceOf[Person]()
+func NewInstanceOf[T any]() *T {
+	var sample T
+	return reflect.New(reflect.TypeOf(sample)).Interface().(*T)
+}
+
+// IsObject determines if the type parameter T is a struct type.
+// This is useful for generic code that needs to verify that a type
+// is a complex object with fields rather than a primitive type.
+//
+// Type parameters:
+//   - T: Any type to check
+//
+// Returns:
+//   - bool: true if T is a struct type, false otherwise
+//
+// Example:
+//
+//	// Returns true
+//	isStruct := IsObject[Person]()
+//
+//	// Returns false
+//	isPrimitive := IsObject[int]()
+func IsObject[T any]() bool {
+	var sample T
+	t := reflect.TypeOf(sample)
+
+	return t.Kind() == reflect.Struct
+}
+
 // Forward returns a pointer to a copy of the provided value.
 // This is useful when you need a pointer to a value but don't want to declare
 // a separate variable.
