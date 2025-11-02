@@ -1,95 +1,97 @@
 package console
 
 import (
-	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"os"
+	"runtime"
+	"sync"
 	"time"
 )
 
-type LogLevel uint8
-
-const (
-	ERROR LogLevel = iota
-	WARNING
-	INFO
-	DEBUG
-	TRACE
-)
-
-func (level LogLevel) String() string {
-	switch level {
-	case ERROR:
-		return "ERROR"
-	case WARNING:
-		return "WARNING"
-	case INFO:
-		return "INFO"
-	case DEBUG:
-		return "DEBUG"
-	case TRACE:
-		return "TRACE"
-	}
-	return ""
-}
-
-type consoleOptions struct {
-	level LogLevel
-
-	timestamp       bool
-	timestampFormat string
-}
-
 type Console struct {
-	name         string
-	in, out, err *os.File
-	options      *consoleOptions
+	name                     string
+	in                       io.Reader
+	out, err                 io.Writer
+	syncIn, syncOut, syncErr sync.Mutex
+	options                  *consoleOptions
 }
 
 func NewConsole() *Console {
 	return &Console{
-		in:      os.Stdin,
-		out:     os.Stdout,
-		err:     os.Stderr,
-		options: &consoleOptions{level: TRACE},
+		in:  os.Stdin,
+		out: os.Stdout,
+		err: os.Stderr,
+		options: &consoleOptions{
+			level:           globalConsoleOptions.level,
+			coloring:        globalConsoleOptions.coloring,
+			timestamp:       globalConsoleOptions.timestamp,
+			timestampFormat: globalConsoleOptions.timestampFormat,
+		},
 	}
 }
 
-func (console *Console) formatMessage(level LogLevel, msg string) string {
-	name := ""
-
-	if len(console.name) != 0 {
-		name = fmt.Sprintf(" - [ %v ]", console.name)
+func (console *Console) formatMessage(level LogLevel, msg string, args ...any) []byte {
+	message := console.format(msg, args...)
+	if level == NONE {
+		return append(message, ln)
 	}
 
-	timestamp := ""
+	var payload []byte
+
 	if console.options.timestamp {
-		now := time.Now()
-		timestamp = fmt.Sprintf(" - [ %v ]", now.Format("01/02/2006 3:04:05 PM"))
-
-		if len(console.options.timestampFormat) != 0 {
-			timestamp = fmt.Sprintf(" - [ %v ]", now.Format(console.options.timestampFormat))
-		}
+		timestamp := time.Now().Format(console.options.timestampFormat)
+		payload = append(payload, []byte(timestamp)...)
+		payload = append(payload, space)
 	}
-	return fmt.Sprintf("[ %v ]%v%v: %v\n", level.String(), timestamp, name, msg)
+
+	payload = append(payload, []byte(level.String())...)
+	payload = append(payload, space)
+
+	if len(console.name) > 0 {
+		payload = append(payload, []byte(console.name)...)
+		payload = append(payload, space)
+	}
+
+	payload = append(payload, message...)
+
+	if console.options.coloring {
+		payload = level.paint(payload)
+	}
+
+	return append(payload, ln)
 }
 
-func (console *Console) InputTo(target *os.File) *Console {
+func (console *Console) format(msg string, args ...any) []byte {
+	if len(args) == 0 {
+		return []byte(msg)
+	}
+	return []byte(fmt.Sprintf(msg, args...))
+}
+
+func (console *Console) writeStringToStream(stream io.Writer, level LogLevel, msg string, args ...any) {
+	if stream == nil {
+		return
+	}
+	_, _ = stream.Write(console.formatMessage(level, msg, args...))
+}
+
+func (console *Console) InputTo(target io.Reader) *Console {
 	if target != nil {
 		console.in = target
 	}
 	return console
 }
 
-func (console *Console) OutputTo(target *os.File) *Console {
+func (console *Console) OutputTo(target io.Writer) *Console {
 	if target != nil {
 		console.out = target
 	}
 	return console
 }
 
-func (console *Console) ErrorsTo(target *os.File) *Console {
+func (console *Console) ErrorsTo(target io.Writer) *Console {
 	if target != nil {
 		console.err = target
 	}
@@ -108,6 +110,7 @@ func (console *Console) WithLogLevel(level LogLevel) *Console {
 
 func (console *Console) WithTimestamp() *Console {
 	console.options.timestamp = true
+	console.options.timestampFormat = "2006-01-02 15:04:05"
 	return console
 }
 
@@ -117,80 +120,100 @@ func (console *Console) WithTimestampFormat(format string) *Console {
 	return console
 }
 
-func (console *Console) Log(msg string) {
-	_, _ = console.out.Write([]byte(msg + "\n"))
-}
-
-func (console *Console) Trace(msg string) {
-	if console.options.level < TRACE {
-		return
+func (console *Console) WithColoring() *Console {
+	if runtime.GOOS != "windows" {
+		console.options.coloring = true
 	}
-	_, _ = console.out.Write([]byte(console.formatMessage(TRACE, msg)))
-}
-
-func (console *Console) Debug(msg string) {
-	if console.options.level < DEBUG {
-		return
-	}
-	_, _ = console.out.Write([]byte(console.formatMessage(DEBUG, msg)))
-}
-
-func (console *Console) Info(msg string) {
-	if console.options.level < INFO {
-		return
-	}
-	_, _ = console.out.Write([]byte(console.formatMessage(INFO, msg)))
-}
-
-func (console *Console) Warning(msg string) {
-	if console.options.level < WARNING {
-		return
-	}
-	_, _ = console.out.Write([]byte(console.formatMessage(WARNING, msg)))
-}
-
-func (console *Console) Error(msg string) {
-	_, _ = console.out.Write([]byte(console.formatMessage(ERROR, msg)))
+	return console
 }
 
 func (console *Console) Logf(msg string, args ...any) {
-	console.Log(fmt.Sprintf(msg, args...))
+	console.syncOut.Lock()
+	defer console.syncOut.Unlock()
+
+	console.writeStringToStream(console.out, NONE, msg, args...)
 }
 
 func (console *Console) Tracef(msg string, args ...any) {
-	console.Trace(fmt.Sprintf(msg, args...))
+	if console.options.level < TRACE {
+		return
+	}
+
+	console.syncOut.Lock()
+	defer console.syncOut.Unlock()
+
+	console.writeStringToStream(console.out, TRACE, msg, args...)
 }
 
 func (console *Console) Debugf(msg string, args ...any) {
-	console.Debug(fmt.Sprintf(msg, args...))
+	if console.options.level < DEBUG {
+		return
+	}
+
+	console.syncOut.Lock()
+	defer console.syncOut.Unlock()
+
+	console.writeStringToStream(console.out, DEBUG, msg, args...)
 }
 
 func (console *Console) Infof(msg string, args ...any) {
-	console.Info(fmt.Sprintf(msg, args...))
+	if console.options.level < INFO {
+		return
+	}
+
+	console.syncOut.Lock()
+	defer console.syncOut.Unlock()
+
+	console.writeStringToStream(console.out, INFO, msg, args...)
 }
 
 func (console *Console) Warningf(msg string, args ...any) {
-	console.Warning(fmt.Sprintf(msg, args...))
+	if console.options.level < WARNING {
+		return
+	}
+
+	console.syncOut.Lock()
+	defer console.syncOut.Unlock()
+
+	console.writeStringToStream(console.out, WARNING, msg, args...)
 }
 
 func (console *Console) Errorf(msg string, args ...any) {
-	console.Error(fmt.Sprintf(msg, args...))
+	console.syncErr.Lock()
+	defer console.syncErr.Unlock()
+
+	console.writeStringToStream(console.err, ERROR, msg, args...)
 }
 
-func (console *Console) Read(n int) (int, []byte, error) {
-	buffer := make([]byte, n)
-	length, err := console.in.Read(buffer)
-	return length, buffer, err
+func (console *Console) Write(data []byte) (n int, err error) {
+	if console.out == nil {
+		return 0, errors.New("writer is nil")
+	}
+
+	console.syncOut.Lock()
+	defer console.syncOut.Unlock()
+
+	return console.out.Write(data)
+}
+
+func (console *Console) Read(buffer []byte) (n int, err error) {
+	if console.in == nil {
+		return 0, errors.New("reader is nil")
+	}
+
+	console.syncIn.Lock()
+	defer console.syncIn.Unlock()
+
+	return console.in.Read(buffer)
 }
 
 func (console *Console) ReadAll() ([]byte, error) {
+	if console.in == nil {
+		return nil, errors.New("reader is nil")
+	}
+
+	console.syncIn.Lock()
+	defer console.syncIn.Unlock()
+
 	return io.ReadAll(console.in)
-}
-
-func (console *Console) Reader() *bufio.Reader {
-	return bufio.NewReader(console.in)
-}
-
-type ObjectLog struct {
-	console *Console
 }
