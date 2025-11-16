@@ -41,8 +41,6 @@ func (xor *XORLinkedList[T, I]) getNode(node link) *XORNode[T] {
 
 func (xor *XORLinkedList[T, I]) createNode() *XORNode[T] {
 	node := raw.AllocateBlank[XORNode[T]]()
-	node.Data = utils.Zero[T]()
-	node.xor = 0
 	return node
 }
 
@@ -51,7 +49,7 @@ func (xor *XORLinkedList[T, I]) removeNode(node *XORNode[T]) {
 }
 
 func (xor *XORLinkedList[T, I]) Free() {
-	if xor.head == 0 || xor.size == 0 {
+	if xor.size == 0 {
 		return
 	}
 
@@ -70,45 +68,43 @@ func (xor *XORLinkedList[T, I]) insert(data T, back bool) *XORNode[T] {
 	node := xor.createNode()
 	node.Data = data
 
-	nodeLink := node.link()
+	nodeRef := node.link()
 
-	if back {
-		if xor.head == 0 {
-			xor.head = nodeLink
-		} else if xor.tail == 0 {
-			xor.tail = nodeLink
+	if xor.head == 0 {
+		xor.head = nodeRef
+	} else if xor.tail == 0 {
+		if back {
+			xor.tail = nodeRef
 
 			node.xor = xor.head
 			head := xor.getNode(xor.head)
 
 			head.xor = xor.tail
 		} else {
-			tail := xor.getNode(xor.tail)
+			xor.tail, xor.head = xor.head, nodeRef
 
-			tail.xor ^= nodeLink
 			node.xor = xor.tail
 
-			xor.tail = nodeLink
+			tail := xor.getNode(xor.tail)
+			tail.xor = xor.head
 		}
 	} else {
-		if xor.head == 0 {
-			xor.head = nodeLink
-		} else if xor.tail == 0 {
-			xor.tail = xor.head
 
-			node.xor = xor.tail
-			tail := xor.getNode(xor.head)
+		basisNode := xor.getNode(xor.tail)
 
-			xor.head = nodeLink
-			tail.xor = xor.head
-		} else {
-			head := xor.getNode(xor.head)
-
-			head.xor ^= nodeLink
-			node.xor = xor.head
-
-			xor.head = nodeLink
+		if !back {
+			basisNode = xor.getNode(xor.head)
 		}
+
+		basisNode.xor ^= nodeRef
+		node.xor = basisNode.link()
+
+		if back {
+			xor.tail = nodeRef
+		} else {
+			xor.head = nodeRef
+		}
+
 	}
 
 	xor.size++
@@ -135,8 +131,6 @@ func (xor *XORLinkedList[T, I]) delete(left, candidate, right link) {
 		rightNode.xor = xor.xor(xor.xor(rightNode.xor, candidate), left)
 	}
 
-	raw.DeAllocate(candidateNode)
-
 	if candidate == xor.tail {
 		xor.tail = left
 	}
@@ -146,10 +140,12 @@ func (xor *XORLinkedList[T, I]) delete(left, candidate, right link) {
 	}
 
 	xor.size--
+
+	raw.DeAllocate(candidateNode)
 }
 
 func (xor *XORLinkedList[T, I]) calcAbsoluteIndex(index int) (int, bool) {
-	if xor.head == 0 {
+	if xor.size == 0 {
 		return 0, false
 	}
 
@@ -242,6 +238,10 @@ func (xor *XORLinkedList[T, I]) Push(data T) {
 	_ = xor.insert(data, true)
 }
 
+func (xor *XORLinkedList[T, I]) PushFront(data T) {
+	_ = xor.insert(data, false)
+}
+
 func (xor *XORLinkedList[T, I]) PushAll(data ...T) {
 	for _, value := range data {
 		_ = xor.insert(value, true)
@@ -299,7 +299,6 @@ func (xor *XORLinkedList[T, I]) DeleteBy(predicate abstract.Predicate[T]) {
 		}
 
 	}
-
 }
 
 func (xor *XORLinkedList[T, I]) DeleteAll() {

@@ -39,6 +39,149 @@ func TestXORList_Push(t *testing.T) {
 	}
 }
 
+func TestXORList_PushFront(t *testing.T) {
+	list := NewXORList[int]()
+	defer list.Free()
+
+	// Test single PushFront
+	list.PushFront(1)
+	if list.Size() != 1 {
+		t.Errorf("Expected size 1, got %d", list.Size())
+	}
+	if list.First() != 1 {
+		t.Errorf("Expected first to be 1, got %d", list.First())
+	}
+	if list.Last() != 1 {
+		t.Errorf("Expected last to be 1, got %d", list.Last())
+	}
+
+	// Test multiple PushFront calls - should insert at the beginning
+	list.PushFront(2)
+	list.PushFront(3)
+	if list.Size() != 3 {
+		t.Errorf("Expected size 3, got %d", list.Size())
+	}
+
+	// Elements should be in reverse order: 3, 2, 1
+	if list.First() != 3 {
+		t.Errorf("Expected first to be 3, got %d", list.First())
+	}
+	if list.At(1) != 2 {
+		t.Errorf("Expected At(1) to be 2, got %d", list.At(1))
+	}
+	if list.Last() != 1 {
+		t.Errorf("Expected last to be 1, got %d", list.Last())
+	}
+}
+
+func TestXORList_PushFrontWithPopRight(t *testing.T) {
+	list := NewXORList[int]()
+	defer list.Free()
+
+	// PushFront adds to the beginning, PopRight removes from the end
+	list.PushFront(1)
+	list.PushFront(2)
+	list.PushFront(3)
+	// List is now: 3, 2, 1
+
+	val := list.PopRight()
+	if val != 1 {
+		t.Errorf("PopRight expected 1, got %d", val)
+	}
+	if list.Size() != 2 {
+		t.Errorf("Expected size 2, got %d", list.Size())
+	}
+
+	val = list.PopRight()
+	if val != 2 {
+		t.Errorf("PopRight expected 2, got %d", val)
+	}
+	if list.Size() != 1 {
+		t.Errorf("Expected size 1, got %d", list.Size())
+	}
+
+	val = list.PopRight()
+	if val != 3 {
+		t.Errorf("PopRight expected 3, got %d", val)
+	}
+	if !list.IsEmpty() {
+		t.Error("List should be empty after all PopRight operations")
+	}
+}
+
+func TestXORList_PushFrontWithPopLeft(t *testing.T) {
+	list := NewXORList[int]()
+	defer list.Free()
+
+	// PushFront adds to the beginning, PopLeft removes from the beginning
+	list.PushFront(1)
+	list.PushFront(2)
+	list.PushFront(3)
+	// List is now: 3, 2, 1
+
+	val := list.PopLeft()
+	if val != 3 {
+		t.Errorf("PopLeft expected 3, got %d", val)
+	}
+	if list.Size() != 2 {
+		t.Errorf("Expected size 2, got %d", list.Size())
+	}
+
+	val = list.PopLeft()
+	if val != 2 {
+		t.Errorf("PopLeft expected 2, got %d", val)
+	}
+	if list.Size() != 1 {
+		t.Errorf("Expected size 1, got %d", list.Size())
+	}
+
+	val = list.PopLeft()
+	if val != 1 {
+		t.Errorf("PopLeft expected 1, got %d", val)
+	}
+	if !list.IsEmpty() {
+		t.Error("List should be empty after all PopLeft operations")
+	}
+}
+
+func TestXORList_PushFrontAndPushMixed(t *testing.T) {
+	list := NewXORList[int]()
+	defer list.Free()
+
+	// Mix PushFront and Push operations
+	list.Push(1)      // [1]
+	list.PushFront(2) // [2, 1]
+	list.Push(3)      // [2, 1, 3]
+	list.PushFront(4) // [4, 2, 1, 3]
+
+	if list.Size() != 4 {
+		t.Errorf("Expected size 4, got %d", list.Size())
+	}
+
+	expected := []int{4, 2, 1, 3}
+	for i, exp := range expected {
+		if got := list.At(i); got != exp {
+			t.Errorf("At(%d) = %d, want %d", i, got, exp)
+		}
+	}
+
+	// Test PopRight on mixed list
+	val := list.PopRight()
+	if val != 3 {
+		t.Errorf("PopRight expected 3, got %d", val)
+	}
+
+	// Test PopLeft on mixed list
+	val = list.PopLeft()
+	if val != 4 {
+		t.Errorf("PopLeft expected 4, got %d", val)
+	}
+
+	if list.Size() != 2 {
+		t.Errorf("Expected size 2, got %d", list.Size())
+	}
+}
+
 func TestXORList_PushAll(t *testing.T) {
 	list := NewXORList[int]()
 	defer list.Free()
@@ -930,7 +1073,6 @@ func BenchmarkXORList_CreateAndDestroy(b *testing.B) {
 
 	for _, size := range sizes {
 		b.Run(string(rune('0'+size/10)), func(b *testing.B) {
-			b.Logf("Full lifecycle: create, populate with %d elements, and destroy", size)
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
 				list := NewXORList[int]()
