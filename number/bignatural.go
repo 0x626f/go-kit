@@ -30,19 +30,25 @@ type BigInt struct {
 //
 // Returns a new mutable BigInt instance initialized with the provided value.
 // Returns nil if conversion fails.
-func BigNatural[T NumericField | string | BigInt | *BigInt | BigFloat | *BigFloat](value T) *BigInt {
+func BigNatural[T NumericField | string | BigInt | *BigInt | BigFloat | *BigFloat | *big.Int | *big.Float](value T) *BigInt {
 
 	obj := new(big.Int)
 
 	switch v := any(value).(type) {
 	case string:
 		if strings.HasPrefix(v, "0x") {
-			obj, _ = obj.SetString(v, 16)
+			obj, _ = obj.SetString(strings.Replace(v, "0x", "", 1), 16)
 		} else if strings.HasPrefix(v, "0o") {
-			obj, _ = obj.SetString(v, 8)
+			obj, _ = obj.SetString(strings.Replace(v, "0o", "", 1), 8)
 		} else {
 			obj, _ = obj.SetString(v, 10)
 		}
+		break
+	case *big.Int:
+		obj.Set(v)
+		break
+	case *big.Float:
+		v.Int(obj)
 		break
 	case *BigInt:
 		obj = obj.Set(v.value)
@@ -51,7 +57,7 @@ func BigNatural[T NumericField | string | BigInt | *BigInt | BigFloat | *BigFloa
 		obj = obj.Set(v.value)
 		break
 	case *BigFloat:
-		obj, _ = v.value.Int(obj)
+		v.value.Int(obj)
 		break
 	case BigFloat:
 		obj, _ = v.value.Int(obj)
@@ -377,6 +383,12 @@ func (number *BigInt) Compare(arg *BigInt) int {
 // Returns a new BigFloat containing the exact integer value.
 func (number *BigInt) BigDecimal() *BigFloat {
 	return BigDecimal(number)
+}
+
+// String returns the string representation of this BigInt.
+// Implements the fmt.Stringer interface.
+func (number *BigInt) String() string {
+	return number.value.String()
 }
 
 // MarshalText implements the encoding.TextMarshaler interface.

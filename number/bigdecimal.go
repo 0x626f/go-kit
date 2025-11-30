@@ -46,13 +46,19 @@ type BigFloat struct {
 //
 // Returns a new mutable BigFloat instance initialized with the provided value.
 // Returns nil if conversion fails.
-func BigDecimal[T NumericField | string | BigInt | *BigInt | BigFloat | *BigFloat](value T) *BigFloat {
+func BigDecimal[T NumericField | string | BigInt | *BigInt | BigFloat | *BigFloat | *big.Float | *big.Int](value T) *BigFloat {
 
 	obj := new(big.Float)
 
 	switch v := any(value).(type) {
 	case string:
 		obj, _ = obj.SetString(v)
+		break
+	case *big.Float:
+		obj.Set(v)
+		break
+	case *big.Int:
+		obj.SetInt(v)
 		break
 	case *BigInt:
 		obj = obj.SetInt(v.value)
@@ -335,6 +341,7 @@ func (number *BigFloat) UnmarshalJSON(text []byte) error {
 	}
 
 	number.mutable = false
+	number.value = new(big.Float)
 	_, err := fmt.Fscan(bytes.NewReader(text), number.value)
 
 	return err
