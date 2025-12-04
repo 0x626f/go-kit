@@ -1,6 +1,7 @@
 package console
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -16,6 +17,14 @@ type Console struct {
 	out, err                 io.Writer
 	syncIn, syncOut, syncErr sync.Mutex
 	options                  *consoleOptions
+}
+
+type jsonLog struct {
+	Source    string `json:"source,omitempty"`
+	Level     string `json:"level,omitempty"`
+	Timestamp string `json:"timestamp,omitempty"`
+	Message   string `json:"message,omitempty"`
+	Object    any    `json:"object,omitempty"`
 }
 
 func NewConsole() *Console {
@@ -63,6 +72,37 @@ func (console *Console) formatMessage(level LogLevel, msg string, args ...any) [
 	return append(payload, ln)
 }
 
+func (console *Console) formatJSONMessage(level LogLevel, object any, msg string, args ...any) ([]byte, error) {
+	log := jsonLog{
+		Level:   level.String(),
+		Message: fmt.Sprintf(msg, args...),
+		Object:  object,
+	}
+
+	if level == NONE {
+		raw, err := json.Marshal(log)
+		if err != nil {
+			return nil, err
+		}
+		return append(raw, ln), nil
+	}
+
+	if console.options.timestamp {
+		log.Timestamp = time.Now().Format(console.options.timestampFormat)
+	}
+
+	if len(console.name) > 0 {
+		log.Source = console.name
+	}
+
+	raw, err := json.Marshal(log)
+	if err != nil {
+		return nil, err
+	}
+
+	return append(raw, ln), nil
+}
+
 func (console *Console) format(msg string, args ...any) []byte {
 	if len(args) == 0 {
 		return []byte(msg)
@@ -75,6 +115,22 @@ func (console *Console) writeStringToStream(stream io.Writer, level LogLevel, ms
 		return
 	}
 	_, _ = stream.Write(console.formatMessage(level, msg, args...))
+}
+
+func (console *Console) writeJSONToStream(stream io.Writer, level LogLevel, object any, msg string, args ...any) error {
+	if stream == nil {
+		return errors.New("nil stream or object")
+	}
+
+	payload, err := console.formatJSONMessage(level, object, msg, args...)
+
+	if err != nil {
+		return err
+	}
+
+	_, err = stream.Write(payload)
+
+	return err
 }
 
 func (console *Console) InputTo(target io.Reader) *Console {
@@ -183,6 +239,64 @@ func (console *Console) Errorf(msg string, args ...any) {
 	defer console.syncErr.Unlock()
 
 	console.writeStringToStream(console.err, ERROR, msg, args...)
+}
+
+func (console *Console) LogJSONf(object any, msg string, args ...any) error {
+	console.syncOut.Lock()
+	defer console.syncOut.Unlock()
+
+	return console.writeJSONToStream(console.out, NONE, object, msg, args...)
+}
+
+func (console *Console) TraceJSONf(object any, msg string, args ...any) error {
+	if console.options.level < TRACE {
+		return nil
+	}
+
+	console.syncOut.Lock()
+	defer console.syncOut.Unlock()
+
+	return console.writeJSONToStream(console.out, TRACE, object, msg, args...)
+}
+
+func (console *Console) DebugJSONf(object any, msg string, args ...any) error {
+	if console.options.level < DEBUG {
+		return nil
+	}
+
+	console.syncOut.Lock()
+	defer console.syncOut.Unlock()
+
+	return console.writeJSONToStream(console.out, DEBUG, object, msg, args...)
+}
+
+func (console *Console) InfoJSONf(object any, msg string, args ...any) error {
+	if console.options.level < INFO {
+		return nil
+	}
+
+	console.syncOut.Lock()
+	defer console.syncOut.Unlock()
+
+	return console.writeJSONToStream(console.out, INFO, object, msg, args...)
+}
+
+func (console *Console) WarningJSONf(object any, msg string, args ...any) error {
+	if console.options.level < WARNING {
+		return nil
+	}
+
+	console.syncOut.Lock()
+	defer console.syncOut.Unlock()
+
+	return console.writeJSONToStream(console.out, WARNING, object, msg, args...)
+}
+
+func (console *Console) ErrorJSONf(object any, msg string, args ...any) error {
+	console.syncErr.Lock()
+	defer console.syncErr.Unlock()
+
+	return console.writeJSONToStream(console.err, ERROR, object, msg, args...)
 }
 
 func (console *Console) Write(data []byte) (n int, err error) {
