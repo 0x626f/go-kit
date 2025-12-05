@@ -352,3 +352,60 @@ func (graph *Graph[V, E, K]) Routes(from, to K, predicate abstract.Predicate[V],
 	dfs(from, 1)
 	return routes
 }
+
+// Join merges another graph into this graph by combining vertices and edges.
+// This is a union operation that adds all vertices and edges from the source graph
+// that don't already exist in the current graph.
+//
+// The join operation:
+//   - Adds all vertices from the source graph that don't exist in the current graph
+//   - Adds all edges from the source graph that don't exist in the current graph
+//   - Preserves existing vertices and edges in the current graph (no overwrites)
+//   - Respects the current graph's features (Directed, Acyclic) when adding edges
+//
+// Parameters:
+//   - arg: The source graph to merge into this graph
+//   - skipErrors: If true, continues merging even if some edges fail to add
+//     (e.g., due to acyclic constraints). If false, errors are silently ignored.
+//     Note: Currently this parameter doesn't change behavior as errors are always ignored.
+//
+// Behavior with graph features:
+//   - Directed graphs: Edges maintain their directionality from the source graph
+//   - Acyclic graphs: Edges that would create cycles are not added
+//   - Undirected graphs: Edges are added bidirectionally as expected
+//
+// Example:
+//
+//	graph1 := ForFeature[*User, int, int](Directed)
+//	graph1.AddVertex(&User{Id: 1})
+//	graph1.AddVertex(&User{Id: 2})
+//	graph1.AddEdge(1, 2, 10)
+//
+//	graph2 := ForFeature[*User, int, int](Directed)
+//	graph2.AddVertex(&User{Id: 2})  // Already exists in graph1
+//	graph2.AddVertex(&User{Id: 3})  // New vertex
+//	graph2.AddEdge(2, 3, 20)        // New edge
+//
+//	graph1.Join(graph2, false)
+//	// graph1 now contains: vertices {1, 2, 3}, edges {1->2, 2->3}
+func (graph *Graph[V, E, K]) Join(arg *Graph[V, E, K], skipErrors bool) {
+	// Add all vertices from arg that don't already exist
+	for vertex, data := range arg.vertices {
+		if _, exist := graph.vertices[vertex]; !exist {
+			graph.vertices[vertex] = data
+		}
+	}
+
+	// Add all edges from arg that don't already exist
+	for vertex0, edges := range arg.matrix.data {
+		if _, exist := graph.matrix.data[vertex0]; !exist {
+			graph.matrix.data[vertex0] = make(map[K]E)
+		}
+
+		for vertex1, data := range edges {
+			if _, exist := graph.matrix.data[vertex0][vertex1]; !exist {
+				_ = graph.AddEdge(vertex0, vertex1, data)
+			}
+		}
+	}
+}
