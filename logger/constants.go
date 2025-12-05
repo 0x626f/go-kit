@@ -1,4 +1,4 @@
-package console
+package logger
 
 type LogLevel uint8
 type color []byte
