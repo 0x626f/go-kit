@@ -1,4 +1,3 @@
-// Package graph provides implementations for graph data structures and algorithms.
 package graph
 
 import (
@@ -153,7 +152,7 @@ func (matrix *AdjacencyMatrix[V, E, K]) HasCycles() bool {
 	}
 
 	// Check each vertex as a potential start of a cycle
-	for vertex, _ := range matrix.data {
+	for vertex := range matrix.data {
 		if _, beenVisited := visited[vertex]; !beenVisited {
 			if matrix.cycled(vertex, zero, visited, records, false) {
 				return true
@@ -183,7 +182,7 @@ func (matrix *AdjacencyMatrix[V, E, K]) cycled(vertex, parent K, visited, record
 		records[vertex] = struct{}{}
 	}
 
-	for subVertex, _ := range matrix.data[vertex] {
+	for subVertex := range matrix.data[vertex] {
 		_, beenVisited := visited[subVertex]
 
 		if !beenVisited {

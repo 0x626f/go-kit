@@ -1,4 +1,3 @@
-// Package graph provides implementations for graph data structures and algorithms.
 package graph
 
 import "github.com/0x626f/go-kit/abstract"

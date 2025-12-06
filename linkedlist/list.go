@@ -1,3 +1,17 @@
+// Package linkedlist provides a generic doubly-linked list implementation with O(1)
+// insertion/deletion operations and efficient bidirectional traversal.
+//
+// The linked list supports:
+//   - Insertion at front or back in O(1) time
+//   - Deletion by index or predicate
+//   - Access by index with optimized traversal
+//   - Functional operations (filter, find, forEach, etc.)
+//   - In-place sorting using quicksort
+//   - Node manipulation for cache implementations
+//
+// The list uses bidirectional links, allowing efficient traversal from either end
+// and enabling optimizations like accessing elements closer to the back by traversing
+// from the tail.
 package linkedlist
 
 import (
@@ -5,24 +19,75 @@ import (
 	"github.com/0x626f/go-kit/utils"
 )
 
+// LinkedList is a generic doubly-linked list that can store elements of any type.
+// It provides constant-time insertion and deletion at both ends, and efficient
+// indexed access through optimized bidirectional traversal.
+//
+// Type parameters:
+//   - D: The type of data stored in the list
+//
+// Example:
+//
+//	list := linkedlist.NewLinkedList[int]()
+//	list.Push(1)
+//	list.Push(2)
+//	list.PushFront(0)
+//	// List now contains: 0, 1, 2
 type LinkedList[D any] struct {
 	LinkedListBase[int, D]
 }
 
+// LinkedListBase is the underlying implementation of the doubly-linked list.
+// It maintains references to both head and tail for O(1) operations at both ends.
+//
+// Type parameters:
+//   - I: Index type (always int in practice)
+//   - D: The type of data stored in nodes
 type LinkedListBase[I int, D any] struct {
+	// head points to the first node in the list, or nil if empty
 	head, tail *LinkedNode[D]
-	size       int
+	// size tracks the current number of elements in the list
+	size int
 }
 
+// LinkedNode represents a single node in the doubly-linked list.
+// Each node stores data and maintains bidirectional links to adjacent nodes.
+//
+// Type parameters:
+//   - D: The type of data stored in this node
 type LinkedNode[D any] struct {
+	// left points to the previous node (nil if this is the head)
 	left, right *LinkedNode[D]
-	Data        D
+	// Data holds the value stored in this node
+	Data D
 }
 
+// NewLinkedList creates and initializes a new empty linked list.
+//
+// Type parameters:
+//   - D: The type of data to store in the list
+//
+// Returns:
+//   - A pointer to the newly created LinkedList
+//
+// Example:
+//
+//	list := linkedlist.NewLinkedList[string]()
+//	list.Push("hello")
+//	list.Push("world")
 func NewLinkedList[D any]() *LinkedList[D] {
 	return &LinkedList[D]{}
 }
 
+// insert is an internal method that adds a new node to the list.
+// When back is true, inserts at the tail; when false, inserts at the head.
+//
+// Parameters:
+//   - data: The data to store in the new node
+//   - back: If true, insert at tail; if false, insert at head
+//
+// Returns:
+//   - A pointer to the newly created node
 func (list *LinkedListBase[I, D]) insert(data D, back bool) *LinkedNode[D] {
 	node := &LinkedNode[D]{Data: data}
 
@@ -57,10 +122,21 @@ func (list *LinkedListBase[I, D]) insert(data D, back bool) *LinkedNode[D] {
 	return node
 }
 
+// deleteByIndex is an internal method that removes a node at the specified index.
+//
+// Parameters:
+//   - index: The index of the node to remove
 func (list *LinkedListBase[I, D]) deleteByIndex(index int) {
 	list.Remove(list.findNodeByIndex(index))
 }
 
+// Remove removes a specific node from the list.
+// This is used internally by cache implementations that maintain references to nodes.
+//
+// Parameters:
+//   - node: The node to remove from the list
+//
+// Time complexity: O(1)
 func (list *LinkedListBase[I, D]) Remove(node *LinkedNode[D]) {
 	if node == nil {
 		return
@@ -84,6 +160,14 @@ func (list *LinkedListBase[I, D]) Remove(node *LinkedNode[D]) {
 	list.size--
 }
 
+// calcAbsoluteIndex converts a potentially negative index to an absolute position.
+// Negative indices count from the end (-1 is the last element, -2 is second-to-last, etc.).
+//
+// Parameters:
+//   - index: The index to convert (can be negative)
+//
+// Returns:
+//   - The absolute index and true if valid, or the original index and false if out of bounds
 func (list *LinkedListBase[I, D]) calcAbsoluteIndex(index int) (int, bool) {
 	if list.size == 0 {
 		return index, false
@@ -101,6 +185,16 @@ func (list *LinkedListBase[I, D]) calcAbsoluteIndex(index int) (int, bool) {
 	return idx, true
 }
 
+// findNodeByIndex finds a node at the specified index using optimized bidirectional traversal.
+// If the index is closer to the head, traverses from head; if closer to tail, traverses from tail.
+//
+// Parameters:
+//   - index: The index to find (supports negative indices)
+//
+// Returns:
+//   - The node at the specified index, or nil if index is out of bounds
+//
+// Time complexity: O(n/2) on average due to bidirectional optimization
 func (list *LinkedListBase[I, D]) findNodeByIndex(index int) *LinkedNode[D] {
 
 	idx, exists := list.calcAbsoluteIndex(index)
@@ -141,14 +235,43 @@ func (list *LinkedListBase[I, D]) findNodeByIndex(index int) *LinkedNode[D] {
 	return iterator
 }
 
+// Size returns the number of elements in the list.
+//
+// Returns:
+//   - The current size of the list
+//
+// Time complexity: O(1)
 func (list *LinkedListBase[I, D]) Size() int {
 	return list.size
 }
 
+// IsEmpty checks whether the list contains any elements.
+//
+// Returns:
+//   - true if the list is empty, false otherwise
+//
+// Time complexity: O(1)
 func (list *LinkedListBase[I, D]) IsEmpty() bool {
 	return list.size == 0
 }
 
+// At retrieves the element at the specified index.
+// Supports negative indices (-1 for last element, -2 for second-to-last, etc.).
+//
+// Parameters:
+//   - index: The index to access (can be negative)
+//
+// Returns:
+//   - The element at the index, or a zero value if index is out of bounds
+//
+// Time complexity: O(n/2) average due to bidirectional traversal optimization
+//
+// Example:
+//
+//	list := linkedlist.NewLinkedList[int]()
+//	list.PushAll(10, 20, 30)
+//	fmt.Println(list.At(0))   // Output: 10
+//	fmt.Println(list.At(-1))  // Output: 30
 func (list *LinkedListBase[I, D]) At(index int) D {
 	node := list.findNodeByIndex(index)
 
@@ -159,32 +282,100 @@ func (list *LinkedListBase[I, D]) At(index int) D {
 	return node.Data
 }
 
+// Get is an alias for At. Retrieves the element at the specified index.
+//
+// Parameters:
+//   - index: The index to access (can be negative)
+//
+// Returns:
+//   - The element at the index, or a zero value if index is out of bounds
 func (list *LinkedListBase[I, D]) Get(index int) D {
 	return list.At(index)
 }
 
+// Push appends an element to the end of the list.
+//
+// Parameters:
+//   - data: The element to append
+//
+// Time complexity: O(1)
 func (list *LinkedListBase[I, D]) Push(data D) {
 	_ = list.insert(data, true)
 }
 
+// PushFront inserts an element at the beginning of the list.
+//
+// Parameters:
+//   - data: The element to insert at the front
+//
+// Time complexity: O(1)
 func (list *LinkedListBase[I, D]) PushFront(data D) {
 	_ = list.insert(data, false)
 }
 
+// PushAll appends multiple elements to the end of the list in order.
+//
+// Parameters:
+//   - data: Variable number of elements to append
+//
+// Time complexity: O(k) where k is the number of elements to add
+//
+// Example:
+//
+//	list := linkedlist.NewLinkedList[int]()
+//	list.PushAll(1, 2, 3, 4, 5)
+//	// List now contains: 1, 2, 3, 4, 5
 func (list *LinkedListBase[I, D]) PushAll(data ...D) {
 	for _, value := range data {
 		_ = list.insert(value, true)
 	}
 }
 
+// Insert adds an element to the end of the list and returns the created node.
+// This is used by cache implementations that need to maintain node references.
+//
+// Parameters:
+//   - data: The element to insert
+//
+// Returns:
+//   - A pointer to the newly created node
+//
+// Time complexity: O(1)
 func (list *LinkedListBase[I, D]) Insert(data D) *LinkedNode[D] {
 	return list.insert(data, true)
 }
 
+// InsertFront adds an element to the beginning of the list and returns the created node.
+// This is used by cache implementations that need to maintain node references.
+//
+// Parameters:
+//   - data: The element to insert
+//
+// Returns:
+//   - A pointer to the newly created node
+//
+// Time complexity: O(1)
 func (list *LinkedListBase[I, D]) InsertFront(data D) *LinkedNode[D] {
 	return list.insert(data, false)
 }
 
+// IndexOf finds the index of the first element matching the predicate.
+//
+// Parameters:
+//   - predicate: A function that returns true for the desired element
+//
+// Returns:
+//   - The index of the first matching element and true if found
+//   - 0 and false if no element matches
+//
+// Time complexity: O(n)
+//
+// Example:
+//
+//	list := linkedlist.NewLinkedList[int]()
+//	list.PushAll(10, 20, 30)
+//	idx, found := list.IndexOf(func(x int) bool { return x == 20 })
+//	// idx = 1, found = true
 func (list *LinkedListBase[I, D]) IndexOf(predicate abstract.Predicate[D]) (int, bool) {
 	var index int
 	iterator := list.head
@@ -200,6 +391,22 @@ func (list *LinkedListBase[I, D]) IndexOf(predicate abstract.Predicate[D]) (int,
 	return 0, false
 }
 
+// Join appends all elements from another collection to this list.
+// This modifies the current list in place.
+//
+// Parameters:
+//   - collection: The collection whose elements to append
+//
+// Time complexity: O(k) where k is the size of the collection to join
+//
+// Example:
+//
+//	list1 := linkedlist.NewLinkedList[int]()
+//	list1.PushAll(1, 2, 3)
+//	list2 := linkedlist.NewLinkedList[int]()
+//	list2.PushAll(4, 5, 6)
+//	list1.Join(list2)
+//	// list1 now contains: 1, 2, 3, 4, 5, 6
 func (list *LinkedListBase[I, D]) Join(collection abstract.Collection[int, D]) {
 	collection.ForEach(func(index int, data D) bool {
 		_ = list.insert(data, true)
@@ -207,6 +414,26 @@ func (list *LinkedListBase[I, D]) Join(collection abstract.Collection[int, D]) {
 	})
 }
 
+// Merge creates a new list containing all elements from this list and another collection.
+// The original lists are not modified.
+//
+// Parameters:
+//   - collection: The collection to merge with
+//
+// Returns:
+//   - A new list containing elements from both collections
+//
+// Time complexity: O(n + k) where n is this list's size and k is the collection's size
+//
+// Example:
+//
+//	list1 := linkedlist.NewLinkedList[int]()
+//	list1.PushAll(1, 2, 3)
+//	list2 := linkedlist.NewLinkedList[int]()
+//	list2.PushAll(4, 5, 6)
+//	merged := list1.Merge(list2)
+//	// merged contains: 1, 2, 3, 4, 5, 6
+//	// list1 and list2 are unchanged
 func (list *LinkedListBase[I, D]) Merge(collection abstract.Collection[int, D]) abstract.Collection[int, D] {
 	merged := NewLinkedList[D]()
 
@@ -225,10 +452,30 @@ func (list *LinkedListBase[I, D]) Merge(collection abstract.Collection[int, D]) 
 	return merged
 }
 
+// Delete removes the element at the specified index.
+// Supports negative indices (-1 for last element, etc.).
+//
+// Parameters:
+//   - index: The index of the element to remove
+//
+// Time complexity: O(n/2) average due to bidirectional traversal
 func (list *LinkedListBase[I, D]) Delete(index int) {
 	list.deleteByIndex(index)
 }
 
+// DeleteBy removes all elements matching the predicate.
+//
+// Parameters:
+//   - predicate: A function that returns true for elements to delete
+//
+// Time complexity: O(n)
+//
+// Example:
+//
+//	list := linkedlist.NewLinkedList[int]()
+//	list.PushAll(1, 2, 3, 4, 5)
+//	list.DeleteBy(func(x int) bool { return x%2 == 0 })
+//	// List now contains: 1, 3, 5
 func (list *LinkedListBase[I, D]) DeleteBy(predicate abstract.Predicate[D]) {
 	iterator := list.head
 
@@ -240,6 +487,10 @@ func (list *LinkedListBase[I, D]) DeleteBy(predicate abstract.Predicate[D]) {
 	}
 }
 
+// DeleteAll removes all elements from the list and clears all node links.
+// The list becomes empty after this operation.
+//
+// Time complexity: O(n)
 func (list *LinkedListBase[I, D]) DeleteAll() {
 	iterator := list.head
 
@@ -253,6 +504,22 @@ func (list *LinkedListBase[I, D]) DeleteAll() {
 	list.size = 0
 }
 
+// Some checks if at least one element matches the predicate.
+//
+// Parameters:
+//   - predicate: A function that returns true for matching elements
+//
+// Returns:
+//   - true if any element matches, false otherwise
+//
+// Time complexity: O(n) in worst case, but returns early on first match
+//
+// Example:
+//
+//	list := linkedlist.NewLinkedList[int]()
+//	list.PushAll(1, 2, 3)
+//	hasEven := list.Some(func(x int) bool { return x%2 == 0 })
+//	// hasEven = true (because 2 is even)
 func (list *LinkedListBase[I, D]) Some(predicate abstract.Predicate[D]) bool {
 	iterator := list.head
 
@@ -266,6 +533,23 @@ func (list *LinkedListBase[I, D]) Some(predicate abstract.Predicate[D]) bool {
 	return false
 }
 
+// Find returns the first element matching the predicate.
+//
+// Parameters:
+//   - predicate: A function that returns true for the desired element
+//
+// Returns:
+//   - The first matching element and true if found
+//   - A zero value and false if no element matches
+//
+// Time complexity: O(n) in worst case, but returns early on first match
+//
+// Example:
+//
+//	list := linkedlist.NewLinkedList[int]()
+//	list.PushAll(10, 20, 30)
+//	val, found := list.Find(func(x int) bool { return x > 15 })
+//	// val = 20, found = true
 func (list *LinkedListBase[I, D]) Find(predicate abstract.Predicate[D]) (D, bool) {
 	iterator := list.head
 
@@ -279,6 +563,23 @@ func (list *LinkedListBase[I, D]) Find(predicate abstract.Predicate[D]) (D, bool
 	return utils.Zero[D](), false
 }
 
+// Filter creates a new list containing only elements matching the predicate.
+// The original list is not modified.
+//
+// Parameters:
+//   - predicate: A function that returns true for elements to include
+//
+// Returns:
+//   - A new list containing only matching elements
+//
+// Time complexity: O(n)
+//
+// Example:
+//
+//	list := linkedlist.NewLinkedList[int]()
+//	list.PushAll(1, 2, 3, 4, 5)
+//	evens := list.Filter(func(x int) bool { return x%2 == 0 })
+//	// evens contains: 2, 4
 func (list *LinkedListBase[I, D]) Filter(predicate abstract.Predicate[D]) abstract.Collection[int, D] {
 	filtered := NewLinkedList[D]()
 
@@ -293,6 +594,22 @@ func (list *LinkedListBase[I, D]) Filter(predicate abstract.Predicate[D]) abstra
 	return filtered
 }
 
+// ForEach iterates over all elements in the list, calling the receiver function for each.
+// If the receiver returns false, iteration stops early.
+//
+// Parameters:
+//   - receiver: A function called for each element with its index and value
+//
+// Time complexity: O(n)
+//
+// Example:
+//
+//	list := linkedlist.NewLinkedList[int]()
+//	list.PushAll(1, 2, 3)
+//	list.ForEach(func(i int, val int) bool {
+//	    fmt.Printf("Index %d: %d\n", i, val)
+//	    return true // continue iteration
+//	})
 func (list *LinkedListBase[I, D]) ForEach(receiver abstract.IndexedReceiver[int, D]) {
 	var index int
 	iterator := list.head
@@ -306,6 +623,12 @@ func (list *LinkedListBase[I, D]) ForEach(receiver abstract.IndexedReceiver[int,
 	}
 }
 
+// First returns the first element in the list.
+//
+// Returns:
+//   - The first element, or a zero value if the list is empty
+//
+// Time complexity: O(1)
 func (list *LinkedListBase[I, D]) First() D {
 	if list.head == nil {
 		return utils.Zero[D]()
@@ -313,6 +636,12 @@ func (list *LinkedListBase[I, D]) First() D {
 	return list.At(0)
 }
 
+// Last returns the last element in the list.
+//
+// Returns:
+//   - The last element, or a zero value if the list is empty
+//
+// Time complexity: O(1)
 func (list *LinkedListBase[I, D]) Last() D {
 	if list.head == nil {
 		return utils.Zero[D]()
@@ -320,6 +649,23 @@ func (list *LinkedListBase[I, D]) Last() D {
 	return list.At(-1)
 }
 
+// Pop removes and returns the element at the specified index.
+// Supports negative indices (-1 for last element, etc.).
+//
+// Parameters:
+//   - index: The index of the element to remove and return
+//
+// Returns:
+//   - The removed element, or a zero value if index is out of bounds
+//
+// Time complexity: O(n/2) average due to bidirectional traversal
+//
+// Example:
+//
+//	list := linkedlist.NewLinkedList[int]()
+//	list.PushAll(10, 20, 30)
+//	val := list.Pop(1)
+//	// val = 20, list now contains: 10, 30
 func (list *LinkedListBase[I, D]) Pop(index int) D {
 	node := list.findNodeByIndex(index)
 
@@ -347,6 +693,20 @@ func (list *LinkedListBase[I, D]) Pop(index int) D {
 	return node.Data
 }
 
+// Swap exchanges the positions of two elements at the specified indices.
+// If either index is invalid or the indices are the same, no swap occurs.
+//
+// Parameters:
+//   - i, j: The indices of elements to swap
+//
+// Time complexity: O(n)
+//
+// Example:
+//
+//	list := linkedlist.NewLinkedList[int]()
+//	list.PushAll(10, 20, 30)
+//	list.Swap(0, 2)
+//	// List now contains: 30, 20, 10
 func (list *LinkedListBase[I, D]) Swap(i, j int) {
 	node0 := list.findNodeByIndex(i)
 
@@ -421,6 +781,20 @@ func (list *LinkedListBase[I, D]) Swap(i, j int) {
 
 }
 
+// Move relocates an element from one position to another in the list.
+//
+// Parameters:
+//   - from: The index of the element to move
+//   - to: The destination index
+//
+// Time complexity: O(n)
+//
+// Example:
+//
+//	list := linkedlist.NewLinkedList[int]()
+//	list.PushAll(10, 20, 30, 40)
+//	list.Move(3, 0)
+//	// List now contains: 40, 10, 20, 30
 func (list *LinkedListBase[I, D]) Move(from, to int) {
 	i, _ := list.calcAbsoluteIndex(from)
 	j, _ := list.calcAbsoluteIndex(to)
@@ -430,10 +804,30 @@ func (list *LinkedListBase[I, D]) Move(from, to int) {
 	list.move(node0, node1, i < j)
 }
 
+// MoveToFront moves a specific node to the front of the list.
+// This is used by cache implementations like LRU cache.
+//
+// Parameters:
+//   - node0: The node to move to the front
+//
+// Time complexity: O(1)
 func (list *LinkedListBase[I, D]) MoveToFront(node0 *LinkedNode[D]) {
 	list.move(node0, list.head, false)
 }
 
+// PopLeft removes and returns the first element from the list.
+//
+// Returns:
+//   - The first element, or a zero value if the list is empty
+//
+// Time complexity: O(1)
+//
+// Example:
+//
+//	list := linkedlist.NewLinkedList[int]()
+//	list.PushAll(10, 20, 30)
+//	val := list.PopLeft()
+//	// val = 10, list now contains: 20, 30
 func (list *LinkedListBase[I, D]) PopLeft() D {
 	if list.head == nil {
 		return utils.Zero[D]()
@@ -457,6 +851,19 @@ func (list *LinkedListBase[I, D]) PopLeft() D {
 	return node.Data
 }
 
+// PopRight removes and returns the last element from the list.
+//
+// Returns:
+//   - The last element, or a zero value if the list is empty
+//
+// Time complexity: O(1)
+//
+// Example:
+//
+//	list := linkedlist.NewLinkedList[int]()
+//	list.PushAll(10, 20, 30)
+//	val := list.PopRight()
+//	// val = 30, list now contains: 10, 20
 func (list *LinkedListBase[I, D]) PopRight() D {
 	if list.size == 0 {
 		return utils.Zero[D]()
@@ -482,6 +889,21 @@ func (list *LinkedListBase[I, D]) PopRight() D {
 	return node.Data
 }
 
+// Shrink reduces the list size to the specified capacity by removing elements from the end.
+// If capacity is 0, all elements are removed.
+// If capacity is greater than or equal to the current size, no elements are removed.
+//
+// Parameters:
+//   - capacity: The maximum number of elements to keep
+//
+// Time complexity: O(k) where k is the number of elements to remove
+//
+// Example:
+//
+//	list := linkedlist.NewLinkedList[int]()
+//	list.PushAll(1, 2, 3, 4, 5)
+//	list.Shrink(3)
+//	// List now contains: 1, 2, 3
 func (list *LinkedListBase[I, D]) Shrink(capacity int) {
 	if capacity >= list.size {
 		return
@@ -503,6 +925,12 @@ func (list *LinkedListBase[I, D]) Shrink(capacity int) {
 	}
 }
 
+// move is an internal method that relocates a node to a new position in the list.
+//
+// Parameters:
+//   - node0: The node to move
+//   - node1: The destination node
+//   - leftToRight: Direction of movement
 func (list *LinkedListBase[I, D]) move(node0, node1 *LinkedNode[D], leftToRight bool) {
 	if node0 == nil || node1 == nil || node0 == node1 {
 		return
@@ -559,6 +987,10 @@ func (list *LinkedListBase[I, D]) move(node0, node1 *LinkedNode[D], leftToRight 
 	}
 }
 
+// swap is an internal method that exchanges two nodes in the list.
+//
+// Parameters:
+//   - node0, node1: The nodes to swap
 func (list *LinkedListBase[I, D]) swap(node0, node1 *LinkedNode[D]) {
 	if node0 == nil || node1 == nil || node0 == node1 {
 		return
@@ -625,6 +1057,24 @@ func (list *LinkedListBase[I, D]) swap(node0, node1 *LinkedNode[D]) {
 
 }
 
+// Sort sorts the list in place using quicksort algorithm.
+// The list is reordered according to the provided comparator function.
+//
+// Parameters:
+//   - comparator: A function that compares two elements.
+//     Should return:
+//   - negative value if first element should come before second
+//   - zero if elements are equal
+//   - positive value if first element should come after second
+//
+// Time complexity: O(n log n) average, O(n²) worst case
+//
+// Example:
+//
+//	list := linkedlist.NewLinkedList[int]()
+//	list.PushAll(30, 10, 20)
+//	list.Sort(func(a, b int) int { return a - b })
+//	// List now contains: 10, 20, 30
 func (list *LinkedListBase[I, D]) Sort(comparator abstract.Comparator[D]) {
 	if list.head == nil {
 		return
@@ -653,6 +1103,15 @@ func (list *LinkedListBase[I, D]) Sort(comparator abstract.Comparator[D]) {
 	}
 }
 
+// quickSort is an internal function implementing the quicksort algorithm for linked lists.
+// It partitions the list and recursively sorts the partitions.
+//
+// Parameters:
+//   - head, tail: The range of nodes to sort
+//   - comparator: The comparison function
+//
+// Returns:
+//   - The new head of the sorted range
 func quickSort[D any](head, tail *LinkedNode[D], comparator abstract.Comparator[D]) *LinkedNode[D] {
 	if head == nil || head == tail {
 		return head
@@ -688,6 +1147,15 @@ func quickSort[D any](head, tail *LinkedNode[D], comparator abstract.Comparator[
 	return newHead
 }
 
+// partition is an internal function that partitions the list around a pivot element.
+// Elements less than the pivot are placed before it, others after it.
+//
+// Parameters:
+//   - head, end: The range to partition (end is the pivot)
+//   - comparator: The comparison function
+//
+// Returns:
+//   - The new head of the partitioned range and the pivot node
 func partition[D any](head, end *LinkedNode[D], comparator abstract.Comparator[D]) (*LinkedNode[D], *LinkedNode[D]) {
 	if head == nil || end == nil {
 		return head, end
@@ -732,6 +1200,13 @@ func partition[D any](head, end *LinkedNode[D], comparator abstract.Comparator[D
 	return head, pivot
 }
 
+// getTail is an internal helper function that finds the last node in a chain.
+//
+// Parameters:
+//   - head: The starting node
+//
+// Returns:
+//   - The last node in the chain, or nil if head is nil
 func getTail[D any](head *LinkedNode[D]) *LinkedNode[D] {
 	if head == nil {
 		return nil

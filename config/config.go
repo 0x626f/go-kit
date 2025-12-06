@@ -76,14 +76,14 @@ func FromFile[T any](filename string) (*T, error) {
 // Example:
 //
 //	type DatabaseConfig struct {
-//	    Host     string `env:"DB_HOST"`
-//	    Port     int    `env:"DB_PORT"`
-//	    User     string `env:"DB_USER"`
+//	    Host string `env:"DB_HOST"`
+//	    Port int `env:"DB_PORT"`
+//	    User string `env:"DB_USER"`
 //	    Password string `env:"DB_PASSWORD"`
 //	}
 //
 //	// Load from environment variables
-//	dbConfig, err := config.FromEnvs[DatabaseConfig]()
+//	dbConfig, err: = config.FromEnvs[DatabaseConfig]()
 func FromEnvs[T any]() (*T, error) {
 	if !utils.IsObject[T]() {
 		return nil, fmt.Errorf("underlying type must be a struct")
