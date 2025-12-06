@@ -1,4 +1,4 @@
-<div style=" text-align: center;">
+<div align="center">
     <pre style="background: none;">
    █████████                      █████   ████ █████ ███████████
   ███░░░░░███                    ░░███   ███░ ░░███ ░█░░░███░░░█
@@ -11,12 +11,12 @@
     </pre>
 </div>
 
-<div style=" text-align: center;">
+<div align="center">
     <h3>The Go-Kit library offers a collection of common data structures, algorithms, and utilities designed to streamline and simplify the development process.</h3>
 </div>
 
 <div>
-    <h1 style=" text-align: center;">Features</h1>
+    <h1 align="center">Features</h1>
     <ul>
         <li>Configuration — generic utils to parse and map .env or .json files</li>
         <li>Logger — logging with different log levels, zero-alloc object logging and async logging </li>
@@ -29,7 +29,7 @@
 </div>
 
 
-<h1 style=" text-align: center;">Installation</h1>
+<h1 align="center">Installation</h1>
 
 ## 
 ```bash
@@ -42,7 +42,7 @@ go get github.com/0x626f/go-kit
 go get github.com/0x626f/go-kit@develop
 ```
 
-<h1 style=" text-align: center;">Testing</h1>
+<h1 align="center">Testing</h1>
 
 ```bash
 go test ./...
@@ -53,7 +53,7 @@ go test -bench=. -benchmem ./...
 ```
 
 
-<div style=" text-align: center;">
-    <h1 style=" text-align: center;">Contributing</h1>
+<div align="center">
+    <h1 align="center">Contributing</h1>
     <h3>Contributions are welcome! Please ensure tests pass and code is properly documented.</h3>
 </div>
