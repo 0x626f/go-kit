@@ -31,7 +31,6 @@
 
 <h1 align="center">Installation</h1>
 
-## 
 ```bash
 #latest released
 go get github.com/0x626f/go-kit
