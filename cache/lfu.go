@@ -9,7 +9,7 @@ import (
 type LFUCache[K comparable, D any] struct {
 	capacity int
 
-	frequencies *linkedlist.LinkedList[*shared.Pair[uint, PrimaryCache[K, D]], int]
+	frequencies *linkedlist.LinkedList[*shared.Pair[uint, PrimaryCache[K, D]]]
 	data        PrimaryCache[uint, *linkedlist.LinkedNode[*shared.Pair[uint, PrimaryCache[K, D]]]]
 	spot        PrimaryCache[K, *linkedlist.LinkedNode[*shared.Pair[uint, PrimaryCache[K, D]]]]
 }

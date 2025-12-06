@@ -5,7 +5,11 @@ import (
 	"github.com/0x626f/go-kit/utils"
 )
 
-type LinkedList[D any, I int] struct {
+type LinkedList[D any] struct {
+	LinkedListBase[int, D]
+}
+
+type LinkedListBase[I int, D any] struct {
 	head, tail *LinkedNode[D]
 	size       int
 }
@@ -15,11 +19,11 @@ type LinkedNode[D any] struct {
 	Data        D
 }
 
-func NewLinkedList[D any]() *LinkedList[D, int] {
-	return &LinkedList[D, int]{}
+func NewLinkedList[D any]() *LinkedList[D] {
+	return &LinkedList[D]{}
 }
 
-func (list *LinkedList[D, I]) insert(data D, back bool) *LinkedNode[D] {
+func (list *LinkedListBase[I, D]) insert(data D, back bool) *LinkedNode[D] {
 	node := &LinkedNode[D]{Data: data}
 
 	if list.head == nil {
@@ -53,11 +57,11 @@ func (list *LinkedList[D, I]) insert(data D, back bool) *LinkedNode[D] {
 	return node
 }
 
-func (list *LinkedList[D, I]) deleteByIndex(index int) {
+func (list *LinkedListBase[I, D]) deleteByIndex(index int) {
 	list.Remove(list.findNodeByIndex(index))
 }
 
-func (list *LinkedList[D, I]) Remove(node *LinkedNode[D]) {
+func (list *LinkedListBase[I, D]) Remove(node *LinkedNode[D]) {
 	if node == nil {
 		return
 	}
@@ -80,7 +84,7 @@ func (list *LinkedList[D, I]) Remove(node *LinkedNode[D]) {
 	list.size--
 }
 
-func (list *LinkedList[D, I]) calcAbsoluteIndex(index int) (int, bool) {
+func (list *LinkedListBase[I, D]) calcAbsoluteIndex(index int) (int, bool) {
 	if list.size == 0 {
 		return index, false
 	}
@@ -97,7 +101,7 @@ func (list *LinkedList[D, I]) calcAbsoluteIndex(index int) (int, bool) {
 	return idx, true
 }
 
-func (list *LinkedList[D, I]) findNodeByIndex(index int) *LinkedNode[D] {
+func (list *LinkedListBase[I, D]) findNodeByIndex(index int) *LinkedNode[D] {
 
 	idx, exists := list.calcAbsoluteIndex(index)
 
@@ -137,15 +141,15 @@ func (list *LinkedList[D, I]) findNodeByIndex(index int) *LinkedNode[D] {
 	return iterator
 }
 
-func (list *LinkedList[D, I]) Size() int {
+func (list *LinkedListBase[I, D]) Size() int {
 	return list.size
 }
 
-func (list *LinkedList[D, I]) IsEmpty() bool {
+func (list *LinkedListBase[I, D]) IsEmpty() bool {
 	return list.size == 0
 }
 
-func (list *LinkedList[D, I]) At(index int) D {
+func (list *LinkedListBase[I, D]) At(index int) D {
 	node := list.findNodeByIndex(index)
 
 	if node == nil {
@@ -155,33 +159,33 @@ func (list *LinkedList[D, I]) At(index int) D {
 	return node.Data
 }
 
-func (list *LinkedList[D, I]) Get(index int) D {
+func (list *LinkedListBase[I, D]) Get(index int) D {
 	return list.At(index)
 }
 
-func (list *LinkedList[D, I]) Push(data D) {
+func (list *LinkedListBase[I, D]) Push(data D) {
 	_ = list.insert(data, true)
 }
 
-func (list *LinkedList[D, I]) PushFront(data D) {
+func (list *LinkedListBase[I, D]) PushFront(data D) {
 	_ = list.insert(data, false)
 }
 
-func (list *LinkedList[D, I]) PushAll(data ...D) {
+func (list *LinkedListBase[I, D]) PushAll(data ...D) {
 	for _, value := range data {
 		_ = list.insert(value, true)
 	}
 }
 
-func (list *LinkedList[D, I]) Insert(data D) *LinkedNode[D] {
+func (list *LinkedListBase[I, D]) Insert(data D) *LinkedNode[D] {
 	return list.insert(data, true)
 }
 
-func (list *LinkedList[D, I]) InsertFront(data D) *LinkedNode[D] {
+func (list *LinkedListBase[I, D]) InsertFront(data D) *LinkedNode[D] {
 	return list.insert(data, false)
 }
 
-func (list *LinkedList[D, I]) IndexOf(predicate abstract.Predicate[D]) (int, bool) {
+func (list *LinkedListBase[I, D]) IndexOf(predicate abstract.Predicate[D]) (int, bool) {
 	var index int
 	iterator := list.head
 
@@ -196,14 +200,14 @@ func (list *LinkedList[D, I]) IndexOf(predicate abstract.Predicate[D]) (int, boo
 	return 0, false
 }
 
-func (list *LinkedList[D, I]) Join(collection abstract.Collection[D, int]) {
+func (list *LinkedListBase[I, D]) Join(collection abstract.Collection[int, D]) {
 	collection.ForEach(func(index int, data D) bool {
 		_ = list.insert(data, true)
 		return true
 	})
 }
 
-func (list *LinkedList[D, I]) Merge(collection abstract.Collection[D, int]) abstract.Collection[D, int] {
+func (list *LinkedListBase[I, D]) Merge(collection abstract.Collection[int, D]) abstract.Collection[int, D] {
 	merged := NewLinkedList[D]()
 
 	iterator := list.head
@@ -221,11 +225,11 @@ func (list *LinkedList[D, I]) Merge(collection abstract.Collection[D, int]) abst
 	return merged
 }
 
-func (list *LinkedList[D, I]) Delete(index int) {
+func (list *LinkedListBase[I, D]) Delete(index int) {
 	list.deleteByIndex(index)
 }
 
-func (list *LinkedList[D, I]) DeleteBy(predicate abstract.Predicate[D]) {
+func (list *LinkedListBase[I, D]) DeleteBy(predicate abstract.Predicate[D]) {
 	iterator := list.head
 
 	for iterator != nil {
@@ -236,7 +240,7 @@ func (list *LinkedList[D, I]) DeleteBy(predicate abstract.Predicate[D]) {
 	}
 }
 
-func (list *LinkedList[D, I]) DeleteAll() {
+func (list *LinkedListBase[I, D]) DeleteAll() {
 	iterator := list.head
 
 	for iterator != nil {
@@ -249,7 +253,7 @@ func (list *LinkedList[D, I]) DeleteAll() {
 	list.size = 0
 }
 
-func (list *LinkedList[D, I]) Some(predicate abstract.Predicate[D]) bool {
+func (list *LinkedListBase[I, D]) Some(predicate abstract.Predicate[D]) bool {
 	iterator := list.head
 
 	for iterator != nil {
@@ -262,7 +266,7 @@ func (list *LinkedList[D, I]) Some(predicate abstract.Predicate[D]) bool {
 	return false
 }
 
-func (list *LinkedList[D, I]) Find(predicate abstract.Predicate[D]) (D, bool) {
+func (list *LinkedListBase[I, D]) Find(predicate abstract.Predicate[D]) (D, bool) {
 	iterator := list.head
 
 	for iterator != nil {
@@ -275,7 +279,7 @@ func (list *LinkedList[D, I]) Find(predicate abstract.Predicate[D]) (D, bool) {
 	return utils.Zero[D](), false
 }
 
-func (list *LinkedList[D, I]) Filter(predicate abstract.Predicate[D]) abstract.Collection[D, int] {
+func (list *LinkedListBase[I, D]) Filter(predicate abstract.Predicate[D]) abstract.Collection[int, D] {
 	filtered := NewLinkedList[D]()
 
 	iterator := list.head
@@ -289,7 +293,7 @@ func (list *LinkedList[D, I]) Filter(predicate abstract.Predicate[D]) abstract.C
 	return filtered
 }
 
-func (list *LinkedList[D, I]) ForEach(receiver abstract.IndexedReceiver[int, D]) {
+func (list *LinkedListBase[I, D]) ForEach(receiver abstract.IndexedReceiver[int, D]) {
 	var index int
 	iterator := list.head
 
@@ -302,21 +306,21 @@ func (list *LinkedList[D, I]) ForEach(receiver abstract.IndexedReceiver[int, D])
 	}
 }
 
-func (list *LinkedList[D, I]) First() D {
+func (list *LinkedListBase[I, D]) First() D {
 	if list.head == nil {
 		return utils.Zero[D]()
 	}
 	return list.At(0)
 }
 
-func (list *LinkedList[D, I]) Last() D {
+func (list *LinkedListBase[I, D]) Last() D {
 	if list.head == nil {
 		return utils.Zero[D]()
 	}
 	return list.At(-1)
 }
 
-func (list *LinkedList[D, I]) Pop(index int) D {
+func (list *LinkedListBase[I, D]) Pop(index int) D {
 	node := list.findNodeByIndex(index)
 
 	if node == nil {
@@ -343,7 +347,7 @@ func (list *LinkedList[D, I]) Pop(index int) D {
 	return node.Data
 }
 
-func (list *LinkedList[D, I]) Swap(i, j int) {
+func (list *LinkedListBase[I, D]) Swap(i, j int) {
 	node0 := list.findNodeByIndex(i)
 
 	if node0 == nil {
@@ -417,7 +421,7 @@ func (list *LinkedList[D, I]) Swap(i, j int) {
 
 }
 
-func (list *LinkedList[D, I]) Move(from, to int) {
+func (list *LinkedListBase[I, D]) Move(from, to int) {
 	i, _ := list.calcAbsoluteIndex(from)
 	j, _ := list.calcAbsoluteIndex(to)
 
@@ -426,11 +430,11 @@ func (list *LinkedList[D, I]) Move(from, to int) {
 	list.move(node0, node1, i < j)
 }
 
-func (list *LinkedList[D, I]) MoveToFront(node0 *LinkedNode[D]) {
+func (list *LinkedListBase[I, D]) MoveToFront(node0 *LinkedNode[D]) {
 	list.move(node0, list.head, false)
 }
 
-func (list *LinkedList[D, I]) PopLeft() D {
+func (list *LinkedListBase[I, D]) PopLeft() D {
 	if list.head == nil {
 		return utils.Zero[D]()
 	}
@@ -453,7 +457,7 @@ func (list *LinkedList[D, I]) PopLeft() D {
 	return node.Data
 }
 
-func (list *LinkedList[D, I]) PopRight() D {
+func (list *LinkedListBase[I, D]) PopRight() D {
 	if list.size == 0 {
 		return utils.Zero[D]()
 	}
@@ -478,7 +482,7 @@ func (list *LinkedList[D, I]) PopRight() D {
 	return node.Data
 }
 
-func (list *LinkedList[D, I]) Shrink(capacity int) {
+func (list *LinkedListBase[I, D]) Shrink(capacity int) {
 	if capacity >= list.size {
 		return
 	}
@@ -499,7 +503,7 @@ func (list *LinkedList[D, I]) Shrink(capacity int) {
 	}
 }
 
-func (list *LinkedList[D, I]) move(node0, node1 *LinkedNode[D], leftToRight bool) {
+func (list *LinkedListBase[I, D]) move(node0, node1 *LinkedNode[D], leftToRight bool) {
 	if node0 == nil || node1 == nil || node0 == node1 {
 		return
 	}
@@ -555,7 +559,7 @@ func (list *LinkedList[D, I]) move(node0, node1 *LinkedNode[D], leftToRight bool
 	}
 }
 
-func (list *LinkedList[D, I]) swap(node0, node1 *LinkedNode[D]) {
+func (list *LinkedListBase[I, D]) swap(node0, node1 *LinkedNode[D]) {
 	if node0 == nil || node1 == nil || node0 == node1 {
 		return
 	}
@@ -621,7 +625,7 @@ func (list *LinkedList[D, I]) swap(node0, node1 *LinkedNode[D]) {
 
 }
 
-func (list *LinkedList[D, I]) Sort(comparator abstract.Comparator[D]) {
+func (list *LinkedListBase[I, D]) Sort(comparator abstract.Comparator[D]) {
 	if list.head == nil {
 		return
 	}

@@ -88,7 +88,7 @@ func TestMerge(t *testing.T) {
 	set0 := Wrap(createSampleUsers(10, 0)...)
 	set1 := Wrap(createSampleUsers(10, 10)...)
 
-	merged := set0.Merge(set1).(*Set[*User, int])
+	merged := set0.Merge(set1).(*Set[int, *User])
 
 	if merged.Size() != 20 {
 		t.Fatal("bad join")

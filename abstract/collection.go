@@ -7,7 +7,7 @@ package abstract
 // Type parameters:
 //   - T: The type of elements stored in the collection
 //   - I: The type used for indexing elements
-type Collection[T any, I any] interface {
+type Collection[I comparable, T any] interface {
 	// Size returns the number of elements in the collection.
 	Size() int
 
@@ -30,11 +30,11 @@ type Collection[T any, I any] interface {
 
 	// Join adds all elements from another collection to this collection.
 	// This operation modifies the current collection.
-	Join(Collection[T, I])
+	Join(Collection[I, T])
 
 	// Merge combines this collection with another collection and returns a new collection.
 	// This operation does not modify the current collection.
-	Merge(Collection[T, I]) Collection[T, I]
+	Merge(Collection[I, T]) Collection[I, T]
 
 	// Delete removes the element at the specified index.
 	Delete(I)
@@ -49,11 +49,11 @@ type Collection[T any, I any] interface {
 	Some(Predicate[T]) bool
 
 	// Find returns the first element that satisfies the predicate and a boolean
-	// indicating whether such element was found.
+	// indicating whether such an element was found.
 	Find(Predicate[T]) (T, bool)
 
 	// Filter creates a new collection containing only elements that satisfy the predicate.
-	Filter(Predicate[T]) Collection[T, I]
+	Filter(Predicate[T]) Collection[I, T]
 
 	// ForEach executes the provided function once for each element in the collection.
 	ForEach(IndexedReceiver[I, T])

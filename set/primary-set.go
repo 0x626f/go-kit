@@ -10,14 +10,14 @@ import "github.com/0x626f/go-kit/abstract"
 // Type parameters:
 //   - T: The element type, must be comparable (support == and != operators)
 type PrimarySet[T comparable] struct {
-	*Set[*abstract.KeyableWrapper[T], T]
+	*Set[T, *abstract.KeyableWrapper[T]]
 }
 
 // NewPrimarySet creates and returns an empty PrimarySet instance.
 // This is a convenience wrapper around Set for working with primitive comparable types.
 func NewPrimarySet[T comparable]() *PrimarySet[T] {
 	return &PrimarySet[T]{
-		Set: New[*abstract.KeyableWrapper[T], T](),
+		Set: New[T, *abstract.KeyableWrapper[T]](),
 	}
 }
 

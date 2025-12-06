@@ -123,7 +123,7 @@ func TestMerge(t *testing.T) {
 	array0 := Wrap(1, 2, 3, 4, 5)
 	array1 := Wrap(6, 7, 8, 9, 10)
 
-	merged := array0.Merge(array1).(*Array[int, int])
+	merged := array0.Merge(array1).(*Array[int])
 
 	if merged.Size() != 10 {
 		t.Fatal("bad merge")

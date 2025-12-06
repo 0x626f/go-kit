@@ -8,7 +8,7 @@ import (
 
 type LRUCache[K comparable, D any] struct {
 	capacity int
-	recent   *linkedlist.LinkedList[*shared.Pair[K, D], int]
+	recent   *linkedlist.LinkedList[*shared.Pair[K, D]]
 	data     map[K]*linkedlist.LinkedNode[*shared.Pair[K, D]]
 }
 

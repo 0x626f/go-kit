@@ -71,24 +71,24 @@ func TestLinkedList_Edge_EmptyList_AllOperations(t *testing.T) {
 func TestLinkedList_Edge_SingleElement_Comprehensive(t *testing.T) {
 	tests := []struct {
 		name      string
-		setupFunc func() *LinkedList[int, int]
+		setupFunc func() *LinkedList[int]
 	}{
-		{"Push", func() *LinkedList[int, int] {
+		{"Push", func() *LinkedList[int] {
 			l := NewLinkedList[int]()
 			l.Push(42)
 			return l
 		}},
-		{"PushFront", func() *LinkedList[int, int] {
+		{"PushFront", func() *LinkedList[int] {
 			l := NewLinkedList[int]()
 			l.PushFront(42)
 			return l
 		}},
-		{"Insert", func() *LinkedList[int, int] {
+		{"Insert", func() *LinkedList[int] {
 			l := NewLinkedList[int]()
 			l.Insert(42)
 			return l
 		}},
-		{"InsertFront", func() *LinkedList[int, int] {
+		{"InsertFront", func() *LinkedList[int] {
 			l := NewLinkedList[int]()
 			l.InsertFront(42)
 			return l
@@ -194,7 +194,7 @@ func TestLinkedList_Edge_TwoElements_AllPermutations(t *testing.T) {
 	})
 }
 
-func verifyTwoElements(t *testing.T, list *LinkedList[int, int], first, second int) {
+func verifyTwoElements(t *testing.T, list *LinkedList[int], first, second int) {
 	if list.Size() != 2 {
 		t.Errorf("Size should be 2, got %d", list.Size())
 	}
@@ -1587,7 +1587,7 @@ func TestLinkedList_QuickSort_FloatComparison(t *testing.T) {
 // Helper Functions
 // ----------------------------------------------------------------------------
 
-func verifySequence(t *testing.T, list *LinkedList[int, int], expected []int) {
+func verifySequence(t *testing.T, list *LinkedList[int], expected []int) {
 	if list.Size() != len(expected) {
 		t.Errorf("Size mismatch: expected %d, got %d", len(expected), list.Size())
 		return
