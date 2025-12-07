@@ -1,0 +1,9 @@
+{
+  "first": 1,
+  "second": "test",
+  "third": 2.2,
+  "fourth": [1,2,3,4],
+  "fifth": true,
+  "sixth": ["one","two","three"],
+  "seventh": [true, true, false, false]
+}
