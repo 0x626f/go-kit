@@ -25,6 +25,37 @@ var (
 	tagEnv = "env"
 )
 
+// GetEnv retrieves the value of an environment variable with a fallback default.
+// If the environment variable exists, its value is returned. Otherwise, the fallback
+// value is returned.
+//
+// This is a convenience function that wraps os.LookupEnv and provides a simpler
+// API for cases where a default value is acceptable.
+//
+// Parameters:
+//   - name: The name of the environment variable to retrieve
+//   - fallback: The default value to return if the environment variable is not set
+//
+// Returns:
+//   - string: The value of the environment variable if it exists, otherwise the fallback value
+//
+// Example:
+//
+//	// Get database host with default
+//	dbHost := config.GetEnv("DB_HOST", "localhost")
+//
+//	// Get port with default
+//	port := config.GetEnv("PORT", "8080")
+//
+//	// Get optional feature flag
+//	enableFeature := config.GetEnv("ENABLE_FEATURE_X", "false")
+func GetEnv(name, fallback string) string {
+	if value, exists := os.LookupEnv(name); exists {
+		return value
+	}
+	return fallback
+}
+
 // FromFile loads configuration from a file and maps it to a struct of type T.
 // Supported file types are JSON (.json extension) and environment files (.env extension).
 //

@@ -1,4 +1,4 @@
-package encoder
+package json
 
 // AppendStringArray appends a JSON array of string values.
 // Each element is quoted according to JSON string rules.

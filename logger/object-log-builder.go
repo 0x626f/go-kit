@@ -1,7 +1,7 @@
 package logger
 
 import (
-	"github.com/0x626f/go-kit/logger/encoder"
+	"github.com/0x626f/go-kit/json"
 	"sync"
 	"time"
 )
@@ -13,7 +13,7 @@ import (
 var builderPool = &sync.Pool{
 	New: func() any {
 		return &ObjectLogBuilder{
-			json: encoder.NewJSONEncoder(),
+			json: json.NewJSONEncoder(),
 		}
 	},
 }
@@ -49,7 +49,7 @@ type ObjectLogBuilder struct {
 	// logger is the parent Logger instance that will emit the log
 	logger *Logger
 	// json is the pooled JSON encoder used to build the output
-	json *encoder.JSONEncoder
+	json *json.JSONEncoder
 	// level is the log level for this message
 	level LogLevel
 }

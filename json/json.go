@@ -1,7 +1,7 @@
 // Package encoder provides efficient JSON encoding functionality for structured logging.
 // It implements a zero-allocation JSON encoder that builds JSON incrementally
 // using a byte buffer, designed specifically for high-performance logging scenarios.
-package encoder
+package json
 
 // JSONEncoder is a specialized JSON encoder optimized for logging.
 // It builds JSON incrementally in a preallocated buffer to minimize allocations
