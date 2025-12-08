@@ -161,3 +161,40 @@ func TestConstants(t *testing.T) {
 		t.Errorf("Expected ln to be '\\n', got %v", ln)
 	}
 }
+
+// Test ParseLogLevel function
+func TestParseLogLevel(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected LogLevel
+	}{
+		{"Uppercase ERROR", "ERROR", ERROR},
+		{"Lowercase error", "error", ERROR},
+		{"Mixed case Error", "Error", ERROR},
+		{"Uppercase WARNING", "WARNING", WARNING},
+		{"Lowercase warning", "warning", WARNING},
+		{"Mixed case Warning", "Warning", WARNING},
+		{"Uppercase INFO", "INFO", INFO},
+		{"Lowercase info", "info", INFO},
+		{"Mixed case Info", "Info", INFO},
+		{"Uppercase DEBUG", "DEBUG", DEBUG},
+		{"Lowercase debug", "debug", DEBUG},
+		{"Mixed case Debug", "Debug", DEBUG},
+		{"Uppercase TRACE", "TRACE", TRACE},
+		{"Lowercase trace", "trace", TRACE},
+		{"Mixed case Trace", "Trace", TRACE},
+		{"Invalid level", "invalid", NONE},
+		{"Empty string", "", NONE},
+		{"Random string", "xyz123", NONE},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ParseLogLevel(tt.input)
+			if result != tt.expected {
+				t.Errorf("ParseLogLevel(%q) = %v, expected %v", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
