@@ -369,10 +369,6 @@ func TestLFUCache_SingleKeyHighFrequency(t *testing.T) {
 	}
 }
 
-// ----------------------------------------------------------------------------
-// Edge Cases: Flush Operations
-// ----------------------------------------------------------------------------
-
 func TestLFUCache_Refresh_WithinCapacity(t *testing.T) {
 	cache := NewLFUCache[string, int](10)
 
@@ -380,7 +376,7 @@ func TestLFUCache_Refresh_WithinCapacity(t *testing.T) {
 	cache.Set("key2", 2)
 	cache.Set("key3", 3)
 
-	cache.Flush(-1)
+	cache.Flush()
 
 	// With capacity 10 and only 3 frequency buckets, refresh shouldn't affect anything
 	if _, exists := cache.Get("key1"); !exists {
@@ -415,7 +411,7 @@ func TestLFUCache_Refresh_ExceedsCapacity(t *testing.T) {
 	// Keep first 2: freq 3 (key2), freq 2 (key1)
 	// Remove: freq 1 (key3)
 
-	cache.Flush(-1)
+	cache.Flush()
 
 	// High frequency items should be kept
 	if _, exists := cache.Get("key2"); !exists {
@@ -462,7 +458,7 @@ func TestLFUCache_Refresh_SortsAndShrinks(t *testing.T) {
 	// Keep first 3: freq 4 (key 2), freq 3 (key 1), freq 2 (key 3)
 	// Remove: freq 1 (keys 4, 5)
 
-	cache.Flush(-1)
+	cache.Flush()
 
 	// High frequency items should be kept
 	if _, exists := cache.Get(2); !exists {
@@ -504,7 +500,7 @@ func TestLFUCache_Refresh_ZeroCapacity(t *testing.T) {
 	// With 0 capacity, Flush removes ALL frequency buckets
 	// Because frequencies.Size() > 0, and capacity is 0
 	// So index+1 > 0 is always true, deleting all buckets
-	cache.Flush(-1)
+	cache.Flush()
 
 	// All keys should be removed with 0 capacity
 	if _, exists := cache.Get("key1"); exists {
@@ -534,7 +530,7 @@ func TestLFUCache_Refresh_CapacityOne(t *testing.T) {
 	// Keep first 1: freq 3 (key1)
 	// Remove: freq 2 (key2)
 
-	cache.Flush(-1)
+	cache.Flush()
 
 	// Highest frequency item should be kept
 	if _, exists := cache.Get("key1"); !exists {
@@ -577,7 +573,7 @@ func TestLFUCache_Refresh_MultipleKeysPerFrequency(t *testing.T) {
 	// Keep first 2: freq 3 (keys 1-3), freq 2 (keys 4-5)
 	// Remove: freq 1 (keys 6-10)
 
-	cache.Flush(-1)
+	cache.Flush()
 
 	// High frequency items should be kept (freq 3)
 	for i := 1; i <= 3; i++ {
@@ -622,7 +618,7 @@ func TestLFUCache_Refresh_AfterDeletes(t *testing.T) {
 	cache.Delete("key2")
 
 	// Flush should still work
-	cache.Flush(-1)
+	cache.Flush()
 
 	// key1 should still exist
 	if _, exists := cache.Get("key1"); !exists {
@@ -646,7 +642,7 @@ func TestLFUCache_Refresh_EmptyFrequencyBuckets(t *testing.T) {
 	cache.Set("key3", 3)
 
 	// Flush should handle empty frequency buckets gracefully
-	cache.Flush(-1)
+	cache.Flush()
 
 	// key3 should still exist
 	if _, exists := cache.Get("key3"); !exists {
@@ -665,7 +661,7 @@ func TestLFUCache_Refresh_PreservesData(t *testing.T) {
 	cache.Get("b")
 	cache.Get("b")
 
-	cache.Flush(-1)
+	cache.Flush()
 
 	// Verify data is preserved
 	val, exists := cache.Get("a")
@@ -696,7 +692,7 @@ func TestLFUCache_Refresh_LargeCapacity(t *testing.T) {
 	}
 
 	// Flush with large capacity should not affect much
-	cache.Flush(-1)
+	cache.Flush()
 
 	// Verify some keys still exist
 	for i := 0; i < 10; i++ {
@@ -732,7 +728,7 @@ func TestLFUCache_EmptyCache_Refresh(t *testing.T) {
 	cache := NewLFUCache[string, int](10)
 
 	// Should not panic
-	cache.Flush(-1)
+	cache.Flush()
 }
 
 // ----------------------------------------------------------------------------
@@ -985,5 +981,138 @@ func TestLFUCache_SpecialCharacterKeys(t *testing.T) {
 		if val != expected {
 			t.Errorf("For key '%s': expected '%s', got '%s'", key, expected, val)
 		}
+	}
+}
+
+func TestLFUCache_Clear_EmptyCache(t *testing.T) {
+	cache := NewLFUCache[string, int](10)
+
+	// Clear on empty cache should not panic
+	cache.Clear()
+
+	// Verify cache is empty
+	if _, exists := cache.Get("anything"); exists {
+		t.Error("Cache should be empty after Clear")
+	}
+}
+
+func TestLFUCache_Clear_WithItems(t *testing.T) {
+	cache := NewLFUCache[string, int](10)
+
+	cache.Set("key1", 1)
+	cache.Set("key2", 2)
+	cache.Set("key3", 3)
+
+	// Clear the cache
+	cache.Clear()
+
+	// All items should be removed
+	if _, exists := cache.Get("key1"); exists {
+		t.Error("key1 should not exist after Clear")
+	}
+	if _, exists := cache.Get("key2"); exists {
+		t.Error("key2 should not exist after Clear")
+	}
+	if _, exists := cache.Get("key3"); exists {
+		t.Error("key3 should not exist after Clear")
+	}
+}
+
+func TestLFUCache_Clear_DifferentFrequencies(t *testing.T) {
+	cache := NewLFUCache[int, string](10)
+
+	cache.Set(1, "one")
+	cache.Set(2, "two")
+	cache.Set(3, "three")
+
+	// Create different frequencies
+	cache.Get(1)
+	cache.Get(1)
+	cache.Get(2)
+
+	// Clear the cache
+	cache.Clear()
+
+	// All items should be removed regardless of frequency
+	if _, exists := cache.Get(1); exists {
+		t.Error("1 should not exist after Clear")
+	}
+	if _, exists := cache.Get(2); exists {
+		t.Error("2 should not exist after Clear")
+	}
+	if _, exists := cache.Get(3); exists {
+		t.Error("3 should not exist after Clear")
+	}
+}
+
+func TestLFUCache_Clear_ThenReuse(t *testing.T) {
+	cache := NewLFUCache[string, int](5)
+
+	cache.Set("key1", 1)
+	cache.Set("key2", 2)
+	cache.Clear()
+
+	// Cache should be functional after Clear
+	cache.Set("key3", 3)
+	cache.Set("key4", 4)
+
+	val, exists := cache.Get("key3")
+	if !exists || val != 3 {
+		t.Error("Cache should be functional after Clear")
+	}
+	val, exists = cache.Get("key4")
+	if !exists || val != 4 {
+		t.Error("Cache should be functional after Clear")
+	}
+
+	// Old items should not exist
+	if _, exists := cache.Get("key1"); exists {
+		t.Error("key1 should not exist")
+	}
+	if _, exists := cache.Get("key2"); exists {
+		t.Error("key2 should not exist")
+	}
+}
+
+func TestLFUCache_Clear_MultipleTimes(t *testing.T) {
+	cache := NewLFUCache[int, int](5)
+
+	cache.Set(1, 100)
+	cache.Clear()
+	cache.Clear()
+	cache.Clear()
+
+	// Cache should still be functional
+	cache.Set(2, 200)
+	val, exists := cache.Get(2)
+	if !exists || val != 200 {
+		t.Error("Cache should be functional after multiple Clears")
+	}
+}
+
+func TestLFUCache_Clear_WithLargeDataset(t *testing.T) {
+	cache := NewLFUCache[int, int](100)
+
+	// Add many items
+	for i := 0; i < 100; i++ {
+		cache.Set(i, i*2)
+		cache.Get(i)
+	}
+
+	// Clear all
+	cache.Clear()
+
+	// Verify all removed
+	for i := 0; i < 100; i++ {
+		if _, exists := cache.Get(i); exists {
+			t.Errorf("Key %d should not exist after Clear", i)
+		}
+	}
+
+	// Cache should still be functional
+	cache.Set(999, 1998)
+	val, exists := cache.Get(999)
+	if !exists || val != 1998 {
+		t.Error("Cache should be functional after Clear")
 	}
 }

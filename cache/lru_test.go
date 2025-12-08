@@ -346,7 +346,7 @@ func TestLRUCache_Refresh_NoEffect(t *testing.T) {
 	cache.Set("key2", 2)
 	cache.Set("key3", 3)
 
-	cache.Flush(-1)
+	cache.Flush()
 
 	// All should still exist
 	if _, exists := cache.Get("key1"); !exists {
@@ -370,7 +370,7 @@ func TestLRUCache_Refresh_OverCapacity(t *testing.T) {
 	cache.Set(5, "five")
 
 	// Now cache has 5 items but capacity is 3
-	cache.Flush(-1)
+	cache.Flush()
 
 	// After refresh, should have only 3 items (most recent)
 	// The Flush method calls Shrink which keeps the first N elements
@@ -616,7 +616,7 @@ func TestLRUCache_EmptyCache_Refresh(t *testing.T) {
 	cache := NewLRUCache[string, int](5)
 
 	// Should not panic
-	cache.Flush(-1)
+	cache.Flush()
 }
 
 // ----------------------------------------------------------------------------
@@ -693,6 +693,159 @@ func TestLRUCache_SpecialCharacterKeys(t *testing.T) {
 		if val != expected {
 			t.Errorf("For key '%s': expected '%s', got '%s'", key, expected, val)
 		}
+	}
+}
+
+func TestLRUCache_Clear_EmptyCache(t *testing.T) {
+	cache := NewLRUCache[string, int](10)
+
+	// Clear on empty cache should not panic
+	cache.Clear()
+
+	// Verify cache is empty
+	if _, exists := cache.Get("anything"); exists {
+		t.Error("Cache should be empty after Clear")
+	}
+}
+
+func TestLRUCache_Clear_WithItems(t *testing.T) {
+	cache := NewLRUCache[string, int](10)
+
+	cache.Set("key1", 1)
+	cache.Set("key2", 2)
+	cache.Set("key3", 3)
+
+	// Clear the cache
+	cache.Clear()
+
+	// All items should be removed
+	if _, exists := cache.Get("key1"); exists {
+		t.Error("key1 should not exist after Clear")
+	}
+	if _, exists := cache.Get("key2"); exists {
+		t.Error("key2 should not exist after Clear")
+	}
+	if _, exists := cache.Get("key3"); exists {
+		t.Error("key3 should not exist after Clear")
+	}
+}
+
+func TestLRUCache_Clear_AfterEviction(t *testing.T) {
+	cache := NewLRUCache[int, string](3)
+
+	cache.Set(1, "one")
+	cache.Set(2, "two")
+	cache.Set(3, "three")
+	cache.Set(4, "four") // Evicts 1
+
+	// Clear the cache
+	cache.Clear()
+
+	// All remaining items should be removed
+	for i := 1; i <= 4; i++ {
+		if _, exists := cache.Get(i); exists {
+			t.Errorf("Key %d should not exist after Clear", i)
+		}
+	}
+}
+
+func TestLRUCache_Clear_ThenReuse(t *testing.T) {
+	cache := NewLRUCache[string, int](5)
+
+	cache.Set("key1", 1)
+	cache.Set("key2", 2)
+	cache.Clear()
+
+	// Cache should be functional after Clear
+	cache.Set("key3", 3)
+	cache.Set("key4", 4)
+
+	val, exists := cache.Get("key3")
+	if !exists || val != 3 {
+		t.Error("Cache should be functional after Clear")
+	}
+	val, exists = cache.Get("key4")
+	if !exists || val != 4 {
+		t.Error("Cache should be functional after Clear")
+	}
+
+	// Old items should not exist
+	if _, exists := cache.Get("key1"); exists {
+		t.Error("key1 should not exist")
+	}
+	if _, exists := cache.Get("key2"); exists {
+		t.Error("key2 should not exist")
+	}
+}
+
+func TestLRUCache_Clear_MultipleTimes(t *testing.T) {
+	cache := NewLRUCache[int, int](5)
+
+	cache.Set(1, 100)
+	cache.Clear()
+	cache.Clear()
+	cache.Clear()
+
+	// Cache should still be functional
+	cache.Set(2, 200)
+	val, exists := cache.Get(2)
+	if !exists || val != 200 {
+		t.Error("Cache should be functional after multiple Clears")
+	}
+}
+
+func TestLRUCache_Clear_WithLargeDataset(t *testing.T) {
+	cache := NewLRUCache[int, int](100)
+
+	// Add many items
+	for i := 0; i < 100; i++ {
+		cache.Set(i, i*2)
+	}
+
+	// Clear all
+	cache.Clear()
+
+	// Verify all removed
+	for i := 0; i < 100; i++ {
+		if _, exists := cache.Get(i); exists {
+			t.Errorf("Key %d should not exist after Clear", i)
+		}
+	}
+
+	// Cache should still be functional
+	cache.Set(999, 1998)
+	val, exists := cache.Get(999)
+	if !exists || val != 1998 {
+		t.Error("Cache should be functional after Clear")
+	}
+}
+
+func TestLRUCache_Clear_ZeroCapacity(t *testing.T) {
+	cache := NewLRUCache[string, int](0)
+
+	cache.Set("key1", 1)
+	cache.Set("key2", 2)
+	cache.Set("key3", 3)
+
+	// Clear the cache
+	cache.Clear()
+
+	// All items should be removed
+	if _, exists := cache.Get("key1"); exists {
+		t.Error("key1 should not exist after Clear")
+	}
+	if _, exists := cache.Get("key2"); exists {
+		t.Error("key2 should not exist after Clear")
+	}
+	if _, exists := cache.Get("key3"); exists {
+		t.Error("key3 should not exist after Clear")
+	}
+
+	// Cache should still be functional
+	cache.Set("key4", 4)
+	val, exists := cache.Get("key4")
+	if !exists || val != 4 {
+		t.Error("Cache should be functional after Clear")
 	}
 }
 
@@ -824,18 +977,26 @@ func TestLRUCache_Refresh_ZeroCapacity(t *testing.T) {
 	cache.Set("key2", 2)
 	cache.Set("key3", 3)
 
-	// Flush with zero capacity should have no effect
-	cache.Flush(-1)
+	// Flush with zero capacity will remove all items
+	// because cache.recent.Size() > 0 and items at (index+1) > 0 will be deleted
+	cache.Flush()
 
-	// All should still exist (zero capacity = unlimited)
-	if _, exists := cache.Get("key1"); !exists {
-		t.Error("key1 should exist with zero capacity")
+	// All items should be removed after flush with zero capacity
+	if _, exists := cache.Get("key1"); exists {
+		t.Error("key1 should be removed after Flush with zero capacity")
 	}
-	if _, exists := cache.Get("key2"); !exists {
-		t.Error("key2 should exist with zero capacity")
+	if _, exists := cache.Get("key2"); exists {
+		t.Error("key2 should be removed after Flush with zero capacity")
 	}
-	if _, exists := cache.Get("key3"); !exists {
-		t.Error("key3 should exist with zero capacity")
+	if _, exists := cache.Get("key3"); exists {
+		t.Error("key3 should be removed after Flush with zero capacity")
+	}
+
+	// Cache should still be functional after Flush
+	cache.Set("key4", 4)
+	val, exists := cache.Get("key4")
+	if !exists || val != 4 {
+		t.Error("Cache should be functional after Flush")
 	}
 }
 
@@ -847,9 +1008,9 @@ func TestLRUCache_MultipleRefreshCalls(t *testing.T) {
 	cache.Set(3, 3)
 
 	// Multiple refresh calls
-	cache.Flush(-1)
-	cache.Flush(-1)
-	cache.Flush(-1)
+	cache.Flush()
+	cache.Flush()
+	cache.Flush()
 
 	// All should still exist
 	if _, exists := cache.Get(1); !exists {
@@ -872,7 +1033,7 @@ func TestLRUCache_RefreshAfterEviction(t *testing.T) {
 	cache.Set(4, "four") // Evicts 1
 
 	// Flush should not change anything
-	cache.Flush(-1)
+	cache.Flush()
 
 	if _, exists := cache.Get(1); exists {
 		t.Error("1 should still be evicted after refresh")

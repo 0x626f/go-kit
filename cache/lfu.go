@@ -155,20 +155,17 @@ func (cache *LFUCache[K, D]) Delete(key K) bool {
 // It sorts frequency buckets by frequency count (highest first) and keeps
 // only the top 'capacity' buckets, removing items in lower frequency buckets.
 //
-// Parameters:
-//   - count: If negative, uses the cache's capacity value instead
+// The flush operation performs the following steps:
+//  1. Checks if the number of frequency buckets exceeds capacity
+//  2. Sorts frequency buckets by frequency (descending - highest first)
+//  3. Keeps only the first 'capacity' buckets
+//  4. Removes all items from buckets beyond capacity
 //
-// The flush operation:
-//  1. Sorts frequency buckets by frequency (descending)
-//  2. Keeps only the first 'capacity' buckets
-//  3. Removes all items from buckets beyond capacity
+// This method is useful for periodic cleanup when the number of frequency
+// buckets has grown beyond the desired capacity limit.
 //
 // Time complexity: O(n log n) where n is the number of frequency buckets
-func (cache *LFUCache[K, D]) Flush(count int) {
-	if count < 0 {
-		count = cache.capacity
-	}
-
+func (cache *LFUCache[K, D]) Flush() {
 	if cache.frequencies.Size() > cache.capacity {
 		cache.frequencies.Sort(func(arg0, arg1 *types.Pair[uint, PrimaryCache[K, D]]) int {
 			return int(arg1.First) - int(arg0.First)
@@ -184,4 +181,26 @@ func (cache *LFUCache[K, D]) Flush(count int) {
 		})
 		cache.frequencies.Shrink(cache.capacity)
 	}
+}
+
+// Clear removes all items from the cache, resetting it to an empty state.
+// This includes clearing all frequency buckets, the frequency-to-node mapping,
+// and the key-to-node mapping.
+//
+// After calling Clear, the cache is empty and ready to accept new items.
+// The capacity remains unchanged.
+//
+// Example:
+//
+//	cache := NewLFUCache[string, int](100)
+//	cache.Set("key1", 1)
+//	cache.Set("key2", 2)
+//	cache.Clear() // Cache is now empty
+//	cache.Set("key3", 3) // Can continue using the cache
+//
+// Time complexity: O(n + m) where n is the number of items and m is the number of frequency buckets
+func (cache *LFUCache[K, D]) Clear() {
+	cache.frequencies.DeleteAll()
+	clear(cache.data)
+	clear(cache.spot)
 }
