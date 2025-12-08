@@ -31,7 +31,7 @@ type LRUCache[K comparable, D any] struct {
 
 	// data maps keys to their corresponding nodes in the linked list
 	// for O(1) lookup and access
-	data map[K]*linkedlist.LinkedNode[*types.Pair[K, D]]
+	data PrimaryCache[K, *linkedlist.LinkedNode[*types.Pair[K, D]]]
 }
 
 // NewLRUCache creates and initializes a new LRU cache with the specified capacity.
@@ -123,33 +123,54 @@ func (cache *LRUCache[K, D]) Delete(key K) bool {
 	return false
 }
 
-// Flush removes items from the cache, keeping only the most recently accessed count items.
+// Flush removes items from the cache when the number of items exceeds capacity.
+// It keeps only the most recently accessed items up to the cache's capacity limit.
 // Items are removed from the back of the access list (least recently used).
 //
-// Parameters:
-//   - count: The number of items to keep. Items beyond this count are removed.
-//     If count is negative, no items are removed.
-//     If count is greater than or equal to the current size, no items are removed.
+// The flush operation performs the following steps:
+//  1. Checks if the current size exceeds capacity
+//  2. Iterates through items and removes those beyond capacity
+//  3. Shrinks the internal list to match capacity
+//
+// This method is useful for periodic cleanup when items have been added
+// without triggering automatic eviction (e.g., when capacity was increased).
 //
 // Example:
 //
 //	cache := NewLRUCache[string, int](100)
 //	// Add items...
-//	cache.Flush(50) // Keep only the 50 most recently used items
+//	cache.Flush() // Ensures cache doesn't exceed 100 items
 //
 // Time complexity: O(n) where n is the number of items to remove
-func (cache *LRUCache[K, D]) Flush(count int) {
-	if count < 0 {
-		return
-	}
+func (cache *LRUCache[K, D]) Flush() {
 
-	if cache.recent.Size() > count {
+	if cache.recent.Size() > cache.capacity {
 		cache.recent.ForEach(func(index int, data *types.Pair[K, D]) bool {
-			if (index + 1) > count {
+			if (index + 1) > cache.capacity {
 				delete(cache.data, data.First)
 			}
 			return true
 		})
-		cache.recent.Shrink(count)
+		cache.recent.Shrink(cache.capacity)
 	}
+}
+
+// Clear removes all items from the cache, resetting it to an empty state.
+// This includes clearing the access order list and the key-to-node mapping.
+//
+// After calling Clear, the cache is empty and ready to accept new items.
+// The capacity remains unchanged.
+//
+// Example:
+//
+//	cache := NewLRUCache[string, int](100)
+//	cache.Set("key1", 1)
+//	cache.Set("key2", 2)
+//	cache.Clear() // Cache is now empty
+//	cache.Set("key3", 3) // Can continue using the cache
+//
+// Time complexity: O(n) where n is the number of items in the cache
+func (cache *LRUCache[K, D]) Clear() {
+	cache.recent.DeleteAll()
+	clear(cache.data)
 }
