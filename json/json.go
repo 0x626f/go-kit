@@ -74,6 +74,15 @@ func (encoder *JSONEncoder) AppendObjectStart() *JSONEncoder {
 	return encoder
 }
 
+// AppendObject appends the provided object to end a JSON object.
+//
+// Returns:
+//   - The encoder for method chaining
+func (encoder *JSONEncoder) AppendObject(object []byte) *JSONEncoder {
+	encoder.buffer = append(encoder.buffer, object...)
+	return encoder
+}
+
 // AppendObjectEnd appends a closing curly brace '}' to end a JSON object.
 //
 // Returns:
