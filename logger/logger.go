@@ -208,17 +208,22 @@ func (logger *Logger) formatMessage(level LogLevel, msg string, args ...any) []b
 	if logger.options.timestamp {
 		timestamp := time.Now().Format(logger.options.timestampFormat)
 		payload = append(payload, []byte(timestamp)...)
-		payload = append(payload, space)
 	}
 
+	if len(payload) > 0 {
+		payload = append(payload, space)
+	}
 	payload = append(payload, []byte(level.String())...)
-	payload = append(payload, space)
 
 	if len(logger.name) > 0 {
-		payload = append(payload, []byte(logger.name)...)
 		payload = append(payload, space)
+		payload = append(payload, '[')
+		payload = append(payload, []byte(logger.name)...)
+		payload = append(payload, ']')
 	}
 
+	payload = append(payload, ':')
+	payload = append(payload, space)
 	payload = append(payload, message...)
 
 	if logger.options.coloring {
