@@ -1,7 +1,7 @@
 // Package config provides utilities for loading application configuration from
 // various sources such as JSON files, environment variables, and .env files.
 // It supports automatic type conversion from string representations to Go types.
-package config
+package env
 
 import (
 	"bufio"
@@ -25,6 +25,65 @@ var (
 	// tagEnv is the struct tag used to map struct fields to environment variables
 	tagEnv = "env"
 )
+
+var prefix string
+
+// SetEnvPrefix sets a global prefix for all environment variable lookups.
+// When a prefix is set, all environment variable names will be automatically
+// prefixed with the given name followed by an underscore.
+//
+// This is useful for namespacing environment variables in multi-tenant applications
+// or when running multiple instances of the same application with different configurations.
+//
+// Parameters:
+//   - name: The prefix to use for environment variable names
+//
+// Example:
+//
+//	// Set prefix to "MYAPP"
+//	config.SetEnvPrefix("MYAPP")
+//
+//	// Now GetEnv("PORT", "8080") will look for "MYAPP_PORT" instead of "PORT"
+//	port := config.GetEnv("PORT", "8080")
+//
+//	// Similarly, GetEnvAs will use the prefix
+//	timeout := config.GetEnvAs("TIMEOUT", 30)  // Looks for "MYAPP_TIMEOUT"
+func SetEnvPrefix(name string) {
+	prefix = name
+}
+
+// GetEnvPrefix returns the current global environment variable prefix.
+// If no prefix has been set, it returns an empty string.
+//
+// Returns:
+//   - string: The current prefix, or empty string if not set
+//
+// Example:
+//
+//	config.SetEnvPrefix("MYAPP")
+//	prefix := config.GetEnvPrefix() // Returns "MYAPP"
+func GetEnvPrefix() string {
+	return prefix
+}
+
+// getPrefixedEnv applies the global prefix to an environment variable name.
+// If no prefix is set, the original environment variable name is returned unchanged.
+// If a prefix is set, it returns the name in the format: "PREFIX_ENVNAME".
+//
+// This is an internal helper function used by all environment variable retrieval functions
+// to ensure consistent prefix handling across the package.
+//
+// Parameters:
+//   - env: The base environment variable name
+//
+// Returns:
+//   - string: The prefixed environment variable name, or the original name if no prefix is set
+func getPrefixedEnv(env string) string {
+	if prefix == "" {
+		return env
+	}
+	return prefix + "_" + env
+}
 
 // GetEnv retrieves the value of an environment variable with a fallback default.
 // If the environment variable exists, its value is returned. Otherwise, the fallback
@@ -51,7 +110,7 @@ var (
 //	// Get optional feature flag
 //	enableFeature := config.GetEnv("ENABLE_FEATURE_X", "false")
 func GetEnv(name, fallback string) string {
-	if value, exists := os.LookupEnv(name); exists {
+	if value, exists := os.LookupEnv(getPrefixedEnv(name)); exists {
 		return value
 	}
 	return fallback
@@ -112,7 +171,7 @@ func canConvertFromEnv(kind reflect.Kind) bool {
 //	// Get a slice of integers
 //	ids := config.GetEnvAs("ALLOWED_IDS", []int{1, 2, 3})
 func GetEnvAs[T any](name string, fallback T) T {
-	if value, exists := os.LookupEnv(name); exists {
+	if value, exists := os.LookupEnv(getPrefixedEnv(name)); exists {
 		instance := utils.NewInstanceOf[T]()
 		instanceType := reflect.TypeOf(instance).Elem()
 
@@ -159,7 +218,7 @@ func GetEnvAs[T any](name string, fallback T) T {
 //	// RETRY_DELAY=500ms
 //	// IDLE_TIMEOUT=2m30s
 func GetEnvDuration(name string, fallback time.Duration) time.Duration {
-	if value, exists := os.LookupEnv(name); exists {
+	if value, exists := os.LookupEnv(getPrefixedEnv(name)); exists {
 		duration, err := time.ParseDuration(value)
 
 		if err == nil {
@@ -247,7 +306,7 @@ func FromEnvs[T any]() (*T, error) {
 			continue
 		}
 
-		value, exists := os.LookupEnv(tag)
+		value, exists := os.LookupEnv(getPrefixedEnv(tag))
 
 		if !exists {
 			continue
@@ -420,7 +479,7 @@ func mapEnvConfig[T any](filename string) (*T, error) {
 			continue
 		}
 
-		value, exists := data[tag]
+		value, exists := data[getPrefixedEnv(tag)]
 
 		if !exists {
 			continue

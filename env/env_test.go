@@ -1,4 +1,4 @@
-package config
+package env
 
 import (
 	"os"
@@ -546,4 +546,190 @@ func TestGetEnvAs_EdgeCases(t *testing.T) {
 			t.Errorf("GetEnvAs[float64] with negative = %v, want -3.14", result)
 		}
 	})
+}
+
+// TestSetEnvPrefix tests the SetEnvPrefix function
+func TestSetEnvPrefix(t *testing.T) {
+	// Save original prefix and restore after test
+	originalPrefix := GetEnvPrefix()
+	defer SetEnvPrefix(originalPrefix)
+
+	t.Run("SetEnvPrefix_Basic", func(t *testing.T) {
+		SetEnvPrefix("MYAPP")
+		result := GetEnvPrefix()
+		if result != "MYAPP" {
+			t.Errorf("GetEnvPrefix() = %v, want 'MYAPP'", result)
+		}
+	})
+
+	t.Run("SetEnvPrefix_Change", func(t *testing.T) {
+		SetEnvPrefix("FIRST")
+		if GetEnvPrefix() != "FIRST" {
+			t.Errorf("GetEnvPrefix() = %v, want 'FIRST'", GetEnvPrefix())
+		}
+
+		SetEnvPrefix("SECOND")
+		if GetEnvPrefix() != "SECOND" {
+			t.Errorf("GetEnvPrefix() = %v, want 'SECOND'", GetEnvPrefix())
+		}
+	})
+
+	t.Run("SetEnvPrefix_Empty", func(t *testing.T) {
+		SetEnvPrefix("TEMP")
+		SetEnvPrefix("")
+		result := GetEnvPrefix()
+		if result != "" {
+			t.Errorf("GetEnvPrefix() after setting empty = %v, want ''", result)
+		}
+	})
+}
+
+// TestGetEnvPrefix tests the GetEnvPrefix function
+func TestGetEnvPrefix(t *testing.T) {
+	// Save original prefix and restore after test
+	originalPrefix := GetEnvPrefix()
+	defer SetEnvPrefix(originalPrefix)
+
+	t.Run("GetEnvPrefix_Default", func(t *testing.T) {
+		SetEnvPrefix("")
+		result := GetEnvPrefix()
+		if result != "" {
+			t.Errorf("GetEnvPrefix() with no prefix = %v, want ''", result)
+		}
+	})
+
+	t.Run("GetEnvPrefix_AfterSet", func(t *testing.T) {
+		SetEnvPrefix("TESTPREFIX")
+		result := GetEnvPrefix()
+		if result != "TESTPREFIX" {
+			t.Errorf("GetEnvPrefix() = %v, want 'TESTPREFIX'", result)
+		}
+	})
+}
+
+// TestGetPrefixedEnv tests the getPrefixedEnv internal function through public APIs
+func TestGetPrefixedEnv(t *testing.T) {
+	// Save original prefix and restore after test
+	originalPrefix := GetEnvPrefix()
+	defer func() {
+		SetEnvPrefix(originalPrefix)
+		os.Unsetenv("TEST_VAR")
+		os.Unsetenv("MYAPP_TEST_VAR")
+	}()
+
+	t.Run("GetPrefixedEnv_NoPrefix", func(t *testing.T) {
+		SetEnvPrefix("")
+		os.Setenv("TEST_VAR", "value1")
+		result := GetEnv("TEST_VAR", "default")
+		if result != "value1" {
+			t.Errorf("GetEnv without prefix = %v, want 'value1'", result)
+		}
+	})
+
+	t.Run("GetPrefixedEnv_WithPrefix", func(t *testing.T) {
+		SetEnvPrefix("MYAPP")
+		os.Unsetenv("TEST_VAR")
+		os.Setenv("MYAPP_TEST_VAR", "value2")
+		result := GetEnv("TEST_VAR", "default")
+		if result != "value2" {
+			t.Errorf("GetEnv with prefix = %v, want 'value2'", result)
+		}
+	})
+
+	t.Run("GetPrefixedEnv_PrefixNotFound", func(t *testing.T) {
+		SetEnvPrefix("MYAPP")
+		os.Unsetenv("TEST_VAR")
+		os.Unsetenv("MYAPP_TEST_VAR")
+		result := GetEnv("TEST_VAR", "fallback")
+		if result != "fallback" {
+			t.Errorf("GetEnv with prefix not found = %v, want 'fallback'", result)
+		}
+	})
+}
+
+// TestPrefixIntegration tests that all env functions respect the prefix
+func TestPrefixIntegration(t *testing.T) {
+	// Save original prefix and restore after test
+	originalPrefix := GetEnvPrefix()
+	defer func() {
+		SetEnvPrefix(originalPrefix)
+		os.Unsetenv("APP_PORT")
+		os.Unsetenv("APP_DEBUG")
+		os.Unsetenv("APP_TIMEOUT")
+		os.Unsetenv("APP_MAX_CONN")
+	}()
+
+	SetEnvPrefix("APP")
+
+	t.Run("Integration_GetEnv", func(t *testing.T) {
+		os.Setenv("APP_PORT", "9000")
+		result := GetEnv("PORT", "8080")
+		if result != "9000" {
+			t.Errorf("GetEnv with prefix = %v, want '9000'", result)
+		}
+	})
+
+	t.Run("Integration_GetEnvAs", func(t *testing.T) {
+		os.Setenv("APP_MAX_CONN", "100")
+		result := GetEnvAs("MAX_CONN", 50)
+		if result != 100 {
+			t.Errorf("GetEnvAs with prefix = %v, want 100", result)
+		}
+	})
+
+	t.Run("Integration_GetEnvAsBool", func(t *testing.T) {
+		os.Setenv("APP_DEBUG", "true")
+		result := GetEnvAs("DEBUG", false)
+		if result != true {
+			t.Errorf("GetEnvAs[bool] with prefix = %v, want true", result)
+		}
+	})
+
+	t.Run("Integration_GetEnvDuration", func(t *testing.T) {
+		os.Setenv("APP_TIMEOUT", "45s")
+		result := GetEnvDuration("TIMEOUT", 30*time.Second)
+		if result != 45*time.Second {
+			t.Errorf("GetEnvDuration with prefix = %v, want 45s", result)
+		}
+	})
+}
+
+// TestPrefixWithFromEnvs tests that FromEnvs respects the prefix
+func TestPrefixWithFromEnvs(t *testing.T) {
+	// Save original prefix and restore after test
+	originalPrefix := GetEnvPrefix()
+	defer func() {
+		SetEnvPrefix(originalPrefix)
+		os.Unsetenv("MYSERVICE_HOST")
+		os.Unsetenv("MYSERVICE_PORT")
+		os.Unsetenv("MYSERVICE_ENABLED")
+	}()
+
+	type Config struct {
+		Host    string `env:"HOST"`
+		Port    int    `env:"PORT"`
+		Enabled bool   `env:"ENABLED"`
+	}
+
+	SetEnvPrefix("MYSERVICE")
+	os.Setenv("MYSERVICE_HOST", "localhost")
+	os.Setenv("MYSERVICE_PORT", "3000")
+	os.Setenv("MYSERVICE_ENABLED", "true")
+
+	config, err := FromEnvs[Config]()
+	if err != nil {
+		t.Fatalf("FromEnvs with prefix failed: %v", err)
+	}
+
+	if config.Host != "localhost" {
+		t.Errorf("Config.Host = %v, want 'localhost'", config.Host)
+	}
+
+	if config.Port != 3000 {
+		t.Errorf("Config.Port = %v, want 3000", config.Port)
+	}
+
+	if !config.Enabled {
+		t.Errorf("Config.Enabled = %v, want true", config.Enabled)
+	}
 }
