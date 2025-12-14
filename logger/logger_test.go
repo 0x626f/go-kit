@@ -32,26 +32,6 @@ func TestUseLoggerRegistry(t *testing.T) {
 	loggerRegistry = nil
 }
 
-func TestGetLogger_WithoutRegistry(t *testing.T) {
-	loggerRegistry = nil
-
-	logger := GetLogger("test")
-	if logger != nil {
-		t.Error("GetLogger should return nil when registry is not initialized")
-	}
-}
-
-func TestGetLogger_NonExistent(t *testing.T) {
-	loggerRegistry = nil
-	UseLoggerRegistry()
-
-	logger := GetLogger("nonexistent")
-	if logger != nil {
-		t.Error("GetLogger should return nil for non-existent logger")
-	}
-	loggerRegistry = nil
-}
-
 func TestNewLogger_WithRegistry(t *testing.T) {
 	loggerRegistry = nil
 	UseLoggerRegistry()

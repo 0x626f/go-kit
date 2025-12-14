@@ -91,15 +91,13 @@ func UseLoggerRegistry() {
 //	    logger.Infof("Using existing logger")
 //	}
 func GetLogger(name string) *Logger {
-	if loggerRegistry == nil {
-		return nil
+	if loggerRegistry != nil {
+		if logger, exists := loggerRegistry[name]; exists {
+			return logger
+		}
 	}
 
-	if logger, exists := loggerRegistry[name]; exists {
-		return logger
-	}
-
-	return nil
+	return NewLogger(name)
 }
 
 // Logger is a structured logger with support for multiple output formats and log levels.
@@ -163,7 +161,7 @@ type jsonLog struct {
 //	sameLogger := logger.NewLogger("api") // Returns apiLogger
 func NewLogger(name string) *Logger {
 	if loggerRegistry != nil {
-		if logger := GetLogger(name); logger != nil {
+		if logger, exists := loggerRegistry[name]; exists {
 			return logger
 		}
 	}
