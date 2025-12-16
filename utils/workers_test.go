@@ -472,3 +472,154 @@ func BenchmarkCallWithRetries(b *testing.B) {
 		DoWithRetries(callback, 3)
 	}
 }
+
+// TestDoWithStopwatch_SuccessfulExecution verifies that duration is measured correctly for successful execution.
+func TestDoWithStopwatch_SuccessfulExecution(t *testing.T) {
+	expectedDelay := 100 * time.Millisecond
+
+	callback := func() error {
+		time.Sleep(expectedDelay)
+		return nil
+	}
+
+	duration, err := DoWithStopwatch(callback)
+
+	if err != nil {
+		t.Errorf("expected no error, got %v", err)
+	}
+
+	// Allow 20ms tolerance for timing variations
+	tolerance := 20 * time.Millisecond
+	if duration < expectedDelay || duration > expectedDelay+tolerance {
+		t.Errorf("expected duration around %v, got %v", expectedDelay, duration)
+	}
+}
+
+// TestDoWithStopwatch_ErrorExecution verifies that duration is measured even when callback returns an error.
+func TestDoWithStopwatch_ErrorExecution(t *testing.T) {
+	expectedDelay := 50 * time.Millisecond
+	expectedErr := errors.New("test error")
+
+	callback := func() error {
+		time.Sleep(expectedDelay)
+		return expectedErr
+	}
+
+	duration, err := DoWithStopwatch(callback)
+
+	if err != expectedErr {
+		t.Errorf("expected error %v, got %v", expectedErr, err)
+	}
+
+	// Verify duration was still measured despite the error
+	tolerance := 20 * time.Millisecond
+	if duration < expectedDelay || duration > expectedDelay+tolerance {
+		t.Errorf("expected duration around %v, got %v", expectedDelay, duration)
+	}
+}
+
+// TestDoWithStopwatch_FastExecution verifies that very fast operations are measured correctly.
+func TestDoWithStopwatch_FastExecution(t *testing.T) {
+	callback := func() error {
+		return nil
+	}
+
+	duration, err := DoWithStopwatch(callback)
+
+	if err != nil {
+		t.Errorf("expected no error, got %v", err)
+	}
+
+	// Fast operations should complete in under 10ms
+	if duration > 10*time.Millisecond {
+		t.Errorf("expected fast execution under 10ms, got %v", duration)
+	}
+
+	if duration < 0 {
+		t.Errorf("duration should not be negative, got %v", duration)
+	}
+}
+
+// TestDoWithStopwatch_MediumExecution verifies timing for medium-duration operations.
+func TestDoWithStopwatch_MediumExecution(t *testing.T) {
+	expectedDelay := 200 * time.Millisecond
+
+	callback := func() error {
+		time.Sleep(expectedDelay)
+		return nil
+	}
+
+	duration, err := DoWithStopwatch(callback)
+
+	if err != nil {
+		t.Errorf("expected no error, got %v", err)
+	}
+
+	tolerance := 30 * time.Millisecond
+	if duration < expectedDelay || duration > expectedDelay+tolerance {
+		t.Errorf("expected duration around %v, got %v", expectedDelay, duration)
+	}
+}
+
+// TestDoWithStopwatch_NilError verifies that nil error is returned correctly.
+func TestDoWithStopwatch_NilError(t *testing.T) {
+	callback := func() error {
+		time.Sleep(10 * time.Millisecond)
+		return nil
+	}
+
+	_, err := DoWithStopwatch(callback)
+
+	if err != nil {
+		t.Errorf("expected nil error, got %v", err)
+	}
+}
+
+// TestDoWithStopwatch_MultipleExecutions verifies consistent behavior across multiple calls.
+func TestDoWithStopwatch_MultipleExecutions(t *testing.T) {
+	expectedDelay := 50 * time.Millisecond
+
+	callback := func() error {
+		time.Sleep(expectedDelay)
+		return nil
+	}
+
+	tolerance := 20 * time.Millisecond
+
+	for i := 0; i < 3; i++ {
+		duration, err := DoWithStopwatch(callback)
+
+		if err != nil {
+			t.Errorf("iteration %d: expected no error, got %v", i, err)
+		}
+
+		if duration < expectedDelay || duration > expectedDelay+tolerance {
+			t.Errorf("iteration %d: expected duration around %v, got %v", i, expectedDelay, duration)
+		}
+	}
+}
+
+// BenchmarkDoWithStopwatch measures the overhead of timing execution.
+func BenchmarkDoWithStopwatch(b *testing.B) {
+	callback := func() error {
+		return nil
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		DoWithStopwatch(callback)
+	}
+}
+
+// BenchmarkDoWithStopwatch_WithWork measures timing with actual work being done.
+func BenchmarkDoWithStopwatch_WithWork(b *testing.B) {
+	callback := func() error {
+		time.Sleep(1 * time.Millisecond)
+		return nil
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		DoWithStopwatch(callback)
+	}
+}

@@ -150,3 +150,32 @@ func DoWithRetries(callback func() error, retries int) error {
 
 	return err
 }
+
+// DoWithStopwatch executes a function and measures its execution time.
+// It returns both the duration of execution and any error returned by the callback.
+//
+// Parameters:
+//   - callback: Function to execute and measure. Can return an error.
+//
+// Returns:
+//   - time.Duration: The time elapsed during callback execution.
+//   - error: Any error returned by the callback, or nil if successful.
+//
+// Example:
+//
+//	duration, err := DoWithStopwatch(func() error {
+//	    return performExpensiveOperation()
+//	})
+//	if err != nil {
+//	    log.Printf("Operation failed after %v: %v", duration, err)
+//	} else {
+//	    log.Printf("Operation completed in %v", duration)
+//	}
+//
+// Note: The timing starts immediately before callback execution and stops immediately after,
+// regardless of whether the callback returns an error or succeeds.
+func DoWithStopwatch(callback func() error) (time.Duration, error) {
+	start, err := time.Now(), callback()
+	duration := time.Since(start)
+	return duration, err
+}
