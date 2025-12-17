@@ -1,5 +1,7 @@
 package logger
 
+import "strings"
+
 // LogLevel represents the severity of a log message.
 // Lower numeric values indicate higher severity.
 // Levels in order from highest to lowest severity: ERROR < WARNING < INFO < DEBUG < TRACE < NONE
@@ -76,6 +78,38 @@ func (level LogLevel) String() string {
 		return "TRACE"
 	default:
 		return ""
+	}
+}
+
+// ParseLogLevel converts a string representation to a LogLevel.
+// The comparison is case-insensitive, so "error", "ERROR", and "Error" all return ERROR.
+//
+// Parameters:
+//   - level: A string representation of the log level
+//
+// Returns:
+//   - The corresponding LogLevel constant
+//   - NONE for unrecognized or empty strings
+//
+// Example:
+//
+//	level := logger.ParseLogLevel("info")    // Returns INFO
+//	level := logger.ParseLogLevel("ERROR")   // Returns ERROR
+//	level := logger.ParseLogLevel("invalid") // Returns NONE
+func ParseLogLevel(level string) LogLevel {
+	switch {
+	case strings.EqualFold(level, "ERROR"):
+		return ERROR
+	case strings.EqualFold(level, "WARNING"):
+		return WARNING
+	case strings.EqualFold(level, "INFO"):
+		return INFO
+	case strings.EqualFold(level, "DEBUG"):
+		return DEBUG
+	case strings.EqualFold(level, "TRACE"):
+		return TRACE
+	default:
+		return NONE
 	}
 }
 

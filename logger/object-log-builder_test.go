@@ -9,7 +9,7 @@ import (
 
 // BenchmarkObjectLogBuilder_AssignString validates zero allocations
 func BenchmarkObjectLogBuilder_AssignString(b *testing.B) {
-	logger := NewLogger().OutputTo(io.Discard).WithLogLevel(INFO)
+	logger := NewLogger("BenchmarkObjectLogBuilder_AssignString").OutputTo(io.Discard).WithLogLevel(INFO)
 
 	// Warm up the pool
 	logger.InfoObjectf("warmup").AssignString("key", "value").Build()
@@ -27,7 +27,7 @@ func BenchmarkObjectLogBuilder_AssignString(b *testing.B) {
 
 // BenchmarkObjectLogBuilder_AssignInt validates zero allocations
 func BenchmarkObjectLogBuilder_AssignInt(b *testing.B) {
-	logger := NewLogger().OutputTo(io.Discard).WithLogLevel(INFO)
+	logger := NewLogger("BenchmarkObjectLogBuilder_AssignInt").OutputTo(io.Discard).WithLogLevel(INFO)
 
 	// Warm up the pool
 	logger.InfoObjectf("warmup").AssignInt("key", 42).Build()
@@ -45,7 +45,7 @@ func BenchmarkObjectLogBuilder_AssignInt(b *testing.B) {
 
 // BenchmarkObjectLogBuilder_AssignBool validates zero allocations
 func BenchmarkObjectLogBuilder_AssignBool(b *testing.B) {
-	logger := NewLogger().OutputTo(io.Discard).WithLogLevel(INFO)
+	logger := NewLogger("BenchmarkObjectLogBuilder_AssignBool").OutputTo(io.Discard).WithLogLevel(INFO)
 
 	// Warm up the pool
 	logger.InfoObjectf("warmup").AssignBool("key", true).Build()
@@ -63,7 +63,7 @@ func BenchmarkObjectLogBuilder_AssignBool(b *testing.B) {
 
 // BenchmarkObjectLogBuilder_AssignFloat64 validates zero allocations
 func BenchmarkObjectLogBuilder_AssignFloat64(b *testing.B) {
-	logger := NewLogger().OutputTo(io.Discard).WithLogLevel(INFO)
+	logger := NewLogger("BenchmarkObjectLogBuilder_AssignFloat64").OutputTo(io.Discard).WithLogLevel(INFO)
 
 	// Warm up the pool
 	logger.InfoObjectf("warmup").AssignFloat64("key", 3.14).Build()
@@ -81,7 +81,7 @@ func BenchmarkObjectLogBuilder_AssignFloat64(b *testing.B) {
 
 // BenchmarkObjectLogBuilder_AssignInt64 validates zero allocations
 func BenchmarkObjectLogBuilder_AssignInt64(b *testing.B) {
-	logger := NewLogger().OutputTo(io.Discard).WithLogLevel(INFO)
+	logger := NewLogger("BenchmarkObjectLogBuilder_AssignInt64").OutputTo(io.Discard).WithLogLevel(INFO)
 
 	// Warm up the pool
 	logger.InfoObjectf("warmup").AssignInt64("key", 123456789).Build()
@@ -99,7 +99,7 @@ func BenchmarkObjectLogBuilder_AssignInt64(b *testing.B) {
 
 // BenchmarkObjectLogBuilder_AssignUInt64 validates zero allocations
 func BenchmarkObjectLogBuilder_AssignUInt64(b *testing.B) {
-	logger := NewLogger().OutputTo(io.Discard).WithLogLevel(INFO)
+	logger := NewLogger("BenchmarkObjectLogBuilder_AssignUInt64").OutputTo(io.Discard).WithLogLevel(INFO)
 
 	// Warm up the pool
 	logger.InfoObjectf("warmup").AssignUInt64("key", 123456789).Build()
@@ -117,7 +117,7 @@ func BenchmarkObjectLogBuilder_AssignUInt64(b *testing.B) {
 
 // BenchmarkObjectLogBuilder_AssignStringArray validates allocations
 func BenchmarkObjectLogBuilder_AssignStringArray(b *testing.B) {
-	logger := NewLogger().OutputTo(io.Discard).WithLogLevel(INFO)
+	logger := NewLogger("BenchmarkObjectLogBuilder_AssignStringArray").OutputTo(io.Discard).WithLogLevel(INFO)
 	arr := []string{"foo", "bar", "baz"}
 
 	// Warm up the pool
@@ -135,7 +135,7 @@ func BenchmarkObjectLogBuilder_AssignStringArray(b *testing.B) {
 
 // BenchmarkObjectLogBuilder_AssignIntArray validates allocations
 func BenchmarkObjectLogBuilder_AssignIntArray(b *testing.B) {
-	logger := NewLogger().OutputTo(io.Discard).WithLogLevel(INFO)
+	logger := NewLogger("BenchmarkObjectLogBuilder_AssignIntArray").OutputTo(io.Discard).WithLogLevel(INFO)
 	arr := []int{1, 2, 3, 4, 5}
 
 	// Warm up the pool
@@ -153,7 +153,7 @@ func BenchmarkObjectLogBuilder_AssignIntArray(b *testing.B) {
 
 // BenchmarkObjectLogBuilder_Mixed validates zero allocations with mixed types
 func BenchmarkObjectLogBuilder_Mixed(b *testing.B) {
-	logger := NewLogger().OutputTo(io.Discard).WithLogLevel(INFO)
+	logger := NewLogger("BenchmarkObjectLogBuilder_Mixed").OutputTo(io.Discard).WithLogLevel(INFO)
 
 	// Warm up the pool
 	logger.InfoObjectf("warmup").
@@ -179,7 +179,7 @@ func BenchmarkObjectLogBuilder_Mixed(b *testing.B) {
 
 // BenchmarkObjectLogBuilder_NestedObjects validates allocations with nested objects
 func BenchmarkObjectLogBuilder_NestedObjects(b *testing.B) {
-	logger := NewLogger().OutputTo(io.Discard).WithLogLevel(INFO)
+	logger := NewLogger("BenchmarkObjectLogBuilder_NestedObjects").OutputTo(io.Discard).WithLogLevel(INFO)
 
 	// Warm up the pool
 	logger.InfoObjectf("warmup").
@@ -205,7 +205,7 @@ func BenchmarkObjectLogBuilder_NestedObjects(b *testing.B) {
 
 // BenchmarkObjectLogBuilder_AllTypes validates allocations with all primitive types
 func BenchmarkObjectLogBuilder_AllTypes(b *testing.B) {
-	logger := NewLogger().OutputTo(io.Discard).WithLogLevel(INFO)
+	logger := NewLogger("BenchmarkObjectLogBuilder_AllTypes").OutputTo(io.Discard).WithLogLevel(INFO)
 
 	// Warm up the pool
 	logger.InfoObjectf("warmup").
@@ -248,7 +248,7 @@ func BenchmarkObjectLogBuilder_AllTypes(b *testing.B) {
 
 // Test ObjectLogBuilder creation
 func TestNewObjectLogBuilder(t *testing.T) {
-	logger := NewLogger().OutputTo(io.Discard).WithLogLevel(INFO)
+	logger := NewLogger("TestNewObjectLogBuilder").OutputTo(io.Discard).WithLogLevel(INFO)
 	builder := logger.InfoObjectf("test")
 
 	if builder == nil {
@@ -265,7 +265,7 @@ func TestNewObjectLogBuilder(t *testing.T) {
 // Test AssignString
 func TestObjectLogBuilder_AssignString(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_AssignString").OutputTo(&buf).WithLogLevel(INFO)
 
 	logger.InfoObjectf("test message").
 		AssignString("name", "John Doe").
@@ -284,7 +284,7 @@ func TestObjectLogBuilder_AssignString(t *testing.T) {
 // Test AssignByte
 func TestObjectLogBuilder_AssignByte(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_AssignByte").OutputTo(&buf).WithLogLevel(INFO)
 
 	logger.InfoObjectf("test").AssignByte("char", 'A').Build()
 
@@ -297,7 +297,7 @@ func TestObjectLogBuilder_AssignByte(t *testing.T) {
 // Test AssignBool
 func TestObjectLogBuilder_AssignBool(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_AssignBool").OutputTo(&buf).WithLogLevel(INFO)
 
 	logger.InfoObjectf("test").
 		AssignBool("active", true).
@@ -316,7 +316,7 @@ func TestObjectLogBuilder_AssignBool(t *testing.T) {
 // Test AssignInt
 func TestObjectLogBuilder_AssignInt(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_AssignInt").OutputTo(&buf).WithLogLevel(INFO)
 
 	logger.InfoObjectf("test").AssignInt("count", 42).Build()
 
@@ -329,7 +329,7 @@ func TestObjectLogBuilder_AssignInt(t *testing.T) {
 // Test AssignInt8
 func TestObjectLogBuilder_AssignInt8(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_AssignInt8").OutputTo(&buf).WithLogLevel(INFO)
 
 	logger.InfoObjectf("test").AssignInt8("value", 127).Build()
 
@@ -342,7 +342,7 @@ func TestObjectLogBuilder_AssignInt8(t *testing.T) {
 // Test AssignInt16
 func TestObjectLogBuilder_AssignInt16(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_AssignInt16").OutputTo(&buf).WithLogLevel(INFO)
 
 	logger.InfoObjectf("test").AssignInt16("value", 32767).Build()
 
@@ -355,7 +355,7 @@ func TestObjectLogBuilder_AssignInt16(t *testing.T) {
 // Test AssignInt32
 func TestObjectLogBuilder_AssignInt32(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_AssignInt32").OutputTo(&buf).WithLogLevel(INFO)
 
 	logger.InfoObjectf("test").AssignInt32("value", 2147483647).Build()
 
@@ -368,7 +368,7 @@ func TestObjectLogBuilder_AssignInt32(t *testing.T) {
 // Test AssignInt64
 func TestObjectLogBuilder_AssignInt64(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_AssignInt64").OutputTo(&buf).WithLogLevel(INFO)
 
 	logger.InfoObjectf("test").AssignInt64("value", 9223372036854775807).Build()
 
@@ -381,7 +381,7 @@ func TestObjectLogBuilder_AssignInt64(t *testing.T) {
 // Test AssignUInt
 func TestObjectLogBuilder_AssignUInt(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_AssignUInt").OutputTo(&buf).WithLogLevel(INFO)
 
 	logger.InfoObjectf("test").AssignUInt("value", 4294967295).Build()
 
@@ -394,7 +394,7 @@ func TestObjectLogBuilder_AssignUInt(t *testing.T) {
 // Test AssignUInt8
 func TestObjectLogBuilder_AssignUInt8(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_AssignUInt8").OutputTo(&buf).WithLogLevel(INFO)
 
 	logger.InfoObjectf("test").AssignUInt8("value", 255).Build()
 
@@ -407,7 +407,7 @@ func TestObjectLogBuilder_AssignUInt8(t *testing.T) {
 // Test AssignUInt16
 func TestObjectLogBuilder_AssignUInt16(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_AssignUInt16").OutputTo(&buf).WithLogLevel(INFO)
 
 	logger.InfoObjectf("test").AssignUInt16("value", 65535).Build()
 
@@ -420,7 +420,7 @@ func TestObjectLogBuilder_AssignUInt16(t *testing.T) {
 // Test AssignUInt32
 func TestObjectLogBuilder_AssignUInt32(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_AssignUInt32").OutputTo(&buf).WithLogLevel(INFO)
 
 	logger.InfoObjectf("test").AssignUInt32("value", 4294967295).Build()
 
@@ -433,7 +433,7 @@ func TestObjectLogBuilder_AssignUInt32(t *testing.T) {
 // Test AssignUInt64
 func TestObjectLogBuilder_AssignUInt64(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_AssignUInt64").OutputTo(&buf).WithLogLevel(INFO)
 
 	logger.InfoObjectf("test").AssignUInt64("value", 18446744073709551615).Build()
 
@@ -446,7 +446,7 @@ func TestObjectLogBuilder_AssignUInt64(t *testing.T) {
 // Test AssignFloat32
 func TestObjectLogBuilder_AssignFloat32(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_AssignFloat32").OutputTo(&buf).WithLogLevel(INFO)
 
 	logger.InfoObjectf("test").AssignFloat32("value", 3.14).Build()
 
@@ -459,7 +459,7 @@ func TestObjectLogBuilder_AssignFloat32(t *testing.T) {
 // Test AssignFloat64
 func TestObjectLogBuilder_AssignFloat64(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_AssignFloat64").OutputTo(&buf).WithLogLevel(INFO)
 
 	logger.InfoObjectf("test").AssignFloat64("value", 3.141592653589793).Build()
 
@@ -472,7 +472,7 @@ func TestObjectLogBuilder_AssignFloat64(t *testing.T) {
 // Test AssignStringArray
 func TestObjectLogBuilder_AssignStringArray(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_AssignStringArray").OutputTo(&buf).WithLogLevel(INFO)
 
 	logger.InfoObjectf("test").
 		AssignStringArray("tags", []string{"go", "logger", "test"}).
@@ -487,7 +487,7 @@ func TestObjectLogBuilder_AssignStringArray(t *testing.T) {
 // Test AssignByteArray
 func TestObjectLogBuilder_AssignByteArray(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_AssignByteArray").OutputTo(&buf).WithLogLevel(INFO)
 
 	logger.InfoObjectf("test").
 		AssignByteArray("bytes", []byte{65, 66, 67}).
@@ -502,7 +502,7 @@ func TestObjectLogBuilder_AssignByteArray(t *testing.T) {
 // Test AssignBoolArray
 func TestObjectLogBuilder_AssignBoolArray(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_AssignBoolArray").OutputTo(&buf).WithLogLevel(INFO)
 
 	logger.InfoObjectf("test").
 		AssignBoolArray("flags", []bool{true, false, true}).
@@ -517,7 +517,7 @@ func TestObjectLogBuilder_AssignBoolArray(t *testing.T) {
 // Test AssignIntArray
 func TestObjectLogBuilder_AssignIntArray(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_AssignIntArray").OutputTo(&buf).WithLogLevel(INFO)
 
 	logger.InfoObjectf("test").
 		AssignIntArray("numbers", []int{1, 2, 3, 4, 5}).
@@ -532,7 +532,7 @@ func TestObjectLogBuilder_AssignIntArray(t *testing.T) {
 // Test AssignInt8Array
 func TestObjectLogBuilder_AssignInt8Array(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_AssignInt8Array").OutputTo(&buf).WithLogLevel(INFO)
 
 	logger.InfoObjectf("test").
 		AssignInt8Array("values", []int8{1, 2, 3}).
@@ -547,7 +547,7 @@ func TestObjectLogBuilder_AssignInt8Array(t *testing.T) {
 // Test AssignInt16Array
 func TestObjectLogBuilder_AssignInt16Array(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_AssignInt16Array").OutputTo(&buf).WithLogLevel(INFO)
 
 	logger.InfoObjectf("test").
 		AssignInt16Array("values", []int16{100, 200, 300}).
@@ -562,7 +562,7 @@ func TestObjectLogBuilder_AssignInt16Array(t *testing.T) {
 // Test AssignInt32Array
 func TestObjectLogBuilder_AssignInt32Array(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_AssignInt32Array").OutputTo(&buf).WithLogLevel(INFO)
 
 	logger.InfoObjectf("test").
 		AssignInt32Array("values", []int32{1000, 2000, 3000}).
@@ -577,7 +577,7 @@ func TestObjectLogBuilder_AssignInt32Array(t *testing.T) {
 // Test AssignIn64Array (note the typo in the method name)
 func TestObjectLogBuilder_AssignIn64Array(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_AssignIn64Array").OutputTo(&buf).WithLogLevel(INFO)
 
 	logger.InfoObjectf("test").
 		AssignIn64Array("values", []int64{10000, 20000, 30000}).
@@ -592,7 +592,7 @@ func TestObjectLogBuilder_AssignIn64Array(t *testing.T) {
 // Test AssignUIntArray
 func TestObjectLogBuilder_AssignUIntArray(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_AssignUIntArray").OutputTo(&buf).WithLogLevel(INFO)
 
 	logger.InfoObjectf("test").
 		AssignUIntArray("values", []uint{1, 2, 3}).
@@ -607,7 +607,7 @@ func TestObjectLogBuilder_AssignUIntArray(t *testing.T) {
 // Test AssignUInt8Array
 func TestObjectLogBuilder_AssignUInt8Array(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_AssignUInt8Array").OutputTo(&buf).WithLogLevel(INFO)
 
 	logger.InfoObjectf("test").
 		AssignUInt8Array("values", []uint8{10, 20, 30}).
@@ -622,7 +622,7 @@ func TestObjectLogBuilder_AssignUInt8Array(t *testing.T) {
 // Test AssignUInt16Array
 func TestObjectLogBuilder_AssignUInt16Array(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_AssignUInt16Array").OutputTo(&buf).WithLogLevel(INFO)
 
 	logger.InfoObjectf("test").
 		AssignUInt16Array("values", []uint16{100, 200, 300}).
@@ -637,7 +637,7 @@ func TestObjectLogBuilder_AssignUInt16Array(t *testing.T) {
 // Test AssignUInt32Array
 func TestObjectLogBuilder_AssignUInt32Array(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_AssignUInt32Array").OutputTo(&buf).WithLogLevel(INFO)
 
 	logger.InfoObjectf("test").
 		AssignUInt32Array("values", []uint32{1000, 2000, 3000}).
@@ -652,7 +652,7 @@ func TestObjectLogBuilder_AssignUInt32Array(t *testing.T) {
 // Test AssignUInt64Array
 func TestObjectLogBuilder_AssignUInt64Array(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_AssignUInt64Array").OutputTo(&buf).WithLogLevel(INFO)
 
 	logger.InfoObjectf("test").
 		AssignUInt64Array("values", []uint64{10000, 20000, 30000}).
@@ -667,7 +667,7 @@ func TestObjectLogBuilder_AssignUInt64Array(t *testing.T) {
 // Test AssignFloat32Array
 func TestObjectLogBuilder_AssignFloat32Array(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_AssignFloat32Array").OutputTo(&buf).WithLogLevel(INFO)
 
 	logger.InfoObjectf("test").
 		AssignFloat32Array("values", []float32{1.1, 2.2, 3.3}).
@@ -682,7 +682,7 @@ func TestObjectLogBuilder_AssignFloat32Array(t *testing.T) {
 // Test AssignFloat64Array
 func TestObjectLogBuilder_AssignFloat64Array(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_AssignFloat64Array").OutputTo(&buf).WithLogLevel(INFO)
 
 	logger.InfoObjectf("test").
 		AssignFloat64Array("values", []float64{1.11, 2.22, 3.33}).
@@ -697,7 +697,7 @@ func TestObjectLogBuilder_AssignFloat64Array(t *testing.T) {
 // Test NestedStart and NestedEnd
 func TestObjectLogBuilder_NestedObjects(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_NestedObjects").OutputTo(&buf).WithLogLevel(INFO)
 
 	logger.InfoObjectf("test").
 		NestedStart("user").
@@ -725,7 +725,7 @@ func TestObjectLogBuilder_NestedObjects(t *testing.T) {
 // Test method chaining
 func TestObjectLogBuilder_MethodChaining(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_MethodChaining").OutputTo(&buf).WithLogLevel(INFO)
 
 	builder := logger.InfoObjectf("test").
 		AssignString("field1", "value1").
@@ -753,7 +753,7 @@ func TestObjectLogBuilder_MethodChaining(t *testing.T) {
 // Test builder pool reuse
 func TestObjectLogBuilder_PoolReuse(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_PoolReuse").OutputTo(&buf).WithLogLevel(INFO)
 
 	// First build
 	logger.InfoObjectf("message1").AssignString("field", "value1").Build()
@@ -779,7 +779,7 @@ func TestObjectLogBuilder_PoolReuse(t *testing.T) {
 // Test empty message
 func TestObjectLogBuilder_EmptyMessage(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_EmptyMessage").OutputTo(&buf).WithLogLevel(INFO)
 
 	logger.InfoObjectf("").AssignString("key", "value").Build()
 
@@ -792,7 +792,7 @@ func TestObjectLogBuilder_EmptyMessage(t *testing.T) {
 // Test complex nested structure
 func TestObjectLogBuilder_ComplexNested(t *testing.T) {
 	var buf bytes.Buffer
-	logger := NewLogger().OutputTo(&buf).WithLogLevel(INFO)
+	logger := NewLogger("TestObjectLogBuilder_ComplexNested").OutputTo(&buf).WithLogLevel(INFO)
 
 	logger.InfoObjectf("complex test").
 		AssignString("topLevel", "value").
@@ -841,7 +841,7 @@ func TestObjectLogBuilder_AllLogLevels(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var buf bytes.Buffer
-			logger := NewLogger().OutputTo(&buf).ErrorsTo(&buf).WithLogLevel(tt.level)
+			logger := NewLogger("TestObjectLogBuilder_AllLogLevels_" + tt.name).OutputTo(&buf).ErrorsTo(&buf).WithLogLevel(tt.level)
 
 			builder := tt.buildFn(logger)
 			if builder != nil {
