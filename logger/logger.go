@@ -46,6 +46,60 @@ import (
 	"time"
 )
 
+// loggerRegistry is a global registry that stores named logger instances.
+// It is initialized by calling UseLoggerRegistry() and accessed via GetLogger().
+var loggerRegistry map[string]*Logger
+
+// UseLoggerRegistry initializes the global logger registry.
+// Once initialized, NewLogger() will automatically register loggers by name,
+// and GetLogger() can be used to retrieve them.
+//
+// This enables centralized logger management where the same named logger
+// instance is reused across the application. Call this once at application startup
+// before creating any loggers if you want to use the registry feature.
+//
+// Example:
+//
+//	// Initialize registry at application startup
+//	logger.UseLoggerRegistry()
+//
+//	// Create or get logger by name
+//	apiLogger := logger.NewLogger("api")
+//	dbLogger := logger.NewLogger("database")
+//
+//	// Later, retrieve the same instance
+//	apiLogger2 := logger.GetLogger("api") // Returns the same instance as apiLogger
+func UseLoggerRegistry() {
+	loggerRegistry = make(map[string]*Logger)
+}
+
+// GetLogger retrieves a logger instance from the registry by name.
+// Returns nil if the registry is not initialized (via UseLoggerRegistry)
+// or if no logger with the given name exists.
+//
+// Parameters:
+//   - name: The name of the logger to retrieve
+//
+// Returns:
+//   - The Logger instance if found, nil otherwise
+//
+// Example:
+//
+//	// Retrieve an existing logger
+//	logger := logger.GetLogger("api")
+//	if logger != nil {
+//	    logger.Infof("Using existing logger")
+//	}
+func GetLogger(name string) *Logger {
+	if loggerRegistry != nil {
+		if logger, exists := loggerRegistry[name]; exists {
+			return logger
+		}
+	}
+
+	return NewLogger(name)
+}
+
 // Logger is a structured logger with support for multiple output formats and log levels.
 // It provides thread-safe logging through mutex-protected output streams.
 //
@@ -78,23 +132,44 @@ type jsonLog struct {
 	Object any `json:"object,omitempty"`
 }
 
-// NewLogger creates a new Logger instance with default configuration.
+// NewLogger creates a new Logger instance with the specified name and default configuration.
 // By default, the logger:
 //   - Writes to stdout for logs and stderr for errors
 //   - Uses the global log level (NONE by default, which logs everything)
 //   - Has no timestamp, no coloring, and operates synchronously
 //
+// If the logger registry is enabled (via UseLoggerRegistry), this function will:
+//   - Return the existing logger instance if one with the given name already exists
+//   - Create and register a new logger if no instance with this name exists
+//
+// Parameters:
+//   - name: The identifier for this logger (e.g., "api", "database", "cache")
+//     The name appears in log output and is used for registry lookups
+//
 // Returns:
-//   - A pointer to the newly created Logger
+//   - A pointer to the Logger instance (new or existing)
 //
 // Example:
 //
-//	logger := logger.NewLogger()
+//	// Without registry (default behavior)
+//	logger := logger.NewLogger("app")
 //	logger.Infof("Application started")
-func NewLogger() *Logger {
-	return &Logger{
-		out: os.Stdout,
-		err: os.Stderr,
+//
+//	// With registry (returns same instance for same name)
+//	logger.UseLoggerRegistry()
+//	apiLogger := logger.NewLogger("api")
+//	sameLogger := logger.NewLogger("api") // Returns apiLogger
+func NewLogger(name string) *Logger {
+	if loggerRegistry != nil {
+		if logger, exists := loggerRegistry[name]; exists {
+			return logger
+		}
+	}
+
+	logger := &Logger{
+		name: name,
+		out:  os.Stdout,
+		err:  os.Stderr,
 		options: &loggerOptions{
 			level:           globalLoggerOptions.level,
 			coloring:        globalLoggerOptions.coloring,
@@ -102,6 +177,12 @@ func NewLogger() *Logger {
 			timestampFormat: globalLoggerOptions.timestampFormat,
 		},
 	}
+
+	if loggerRegistry != nil {
+		loggerRegistry[name] = logger
+	}
+
+	return logger
 }
 
 // formatMessage formats a log message with optional timestamp, level, and logger name.
@@ -125,17 +206,22 @@ func (logger *Logger) formatMessage(level LogLevel, msg string, args ...any) []b
 	if logger.options.timestamp {
 		timestamp := time.Now().Format(logger.options.timestampFormat)
 		payload = append(payload, []byte(timestamp)...)
-		payload = append(payload, space)
 	}
 
+	if len(payload) > 0 {
+		payload = append(payload, space)
+	}
 	payload = append(payload, []byte(level.String())...)
-	payload = append(payload, space)
 
 	if len(logger.name) > 0 {
-		payload = append(payload, []byte(logger.name)...)
 		payload = append(payload, space)
+		payload = append(payload, '[')
+		payload = append(payload, []byte(logger.name)...)
+		payload = append(payload, ']')
 	}
 
+	payload = append(payload, ':')
+	payload = append(payload, space)
 	payload = append(payload, message...)
 
 	if logger.options.coloring {
@@ -363,24 +449,6 @@ func (logger *Logger) WithAsync(option bool, capacity int) (*Logger, func()) {
 
 	}
 	return logger, cancel
-}
-
-// WithName sets an identifier for this logger instance.
-// The name appears in log output to distinguish logs from different components.
-//
-// Parameters:
-//   - name: The logger name (e.g., "api", "database", "cache")
-//
-// Returns:
-//   - The logger for method chaining
-//
-// Example:
-//
-//	logger := logger.NewLogger().WithName("api")
-//	logger.Infof("Request received") // Output includes "api" prefix
-func (logger *Logger) WithName(name string) *Logger {
-	logger.name = name
-	return logger
 }
 
 // WithLogLevel sets the minimum log level for this logger.
