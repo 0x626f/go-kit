@@ -27,62 +27,77 @@ func TestEnvConfig(t *testing.T) {
 
 	conf, err := FromFile[sample](envFile)
 
-	if err != nil && err.Error() != "couldn't map dimensional arrays from .env" {
-		t.Fatal(err)
-	}
-
-	if conf.First != 1 {
-		t.Fatal("first mismatch")
-	}
-
-	if conf.Second != "test" {
-		t.Fatal("second mismatch")
-	}
-
-	if conf.Third != 2.2 {
-		t.Fatal("third mismatch")
-	}
-
-	fourthExpected := []int8{1, 2, 3, 4}
-	if len(conf.Fourth) != len(fourthExpected) {
-		t.Fatal("fourth len mismatch")
-	}
-
-	for index, expected := range fourthExpected {
-		if conf.Fourth[index] != expected {
-			t.Fatal("fourth mismatch")
+	t.Run("ErrorHandling", func(t *testing.T) {
+		if err != nil && err.Error() != "couldn't map dimensional arrays from .env" {
+			t.Fatalf("unexpected error: %v", err)
 		}
-	}
+	})
 
-	if !conf.Fifth {
-		t.Fatal("fifth mismatch")
-	}
-
-	sixthExpected := []string{"one", "two", "three"}
-	if len(conf.Sixth) != len(sixthExpected) {
-		t.Fatal("sixth len mismatch")
-	}
-
-	for index, expected := range sixthExpected {
-		if conf.Sixth[index] != expected {
-			t.Fatal("sixth mismatch")
+	t.Run("IntField", func(t *testing.T) {
+		if conf.First != 1 {
+			t.Errorf("First = %v, want 1", conf.First)
 		}
-	}
+	})
 
-	seventhExpected := []bool{true, true, false, false}
-	if len(conf.Seventh) != len(seventhExpected) {
-		t.Fatal("seventh len mismatch")
-	}
-
-	for index, expected := range seventhExpected {
-		if conf.Seventh[index] != expected {
-			t.Fatal("seventh mismatch")
+	t.Run("StringField", func(t *testing.T) {
+		if conf.Second != "test" {
+			t.Errorf("Second = %v, want 'test'", conf.Second)
 		}
-	}
+	})
 
-	if len(conf.Eighth) != 0 {
-		t.Fatal("eight mismatch")
-	}
+	t.Run("FloatField", func(t *testing.T) {
+		if conf.Third != 2.2 {
+			t.Errorf("Third = %v, want 2.2", conf.Third)
+		}
+	})
+
+	t.Run("Int8SliceField", func(t *testing.T) {
+		fourthExpected := []int8{1, 2, 3, 4}
+		if len(conf.Fourth) != len(fourthExpected) {
+			t.Errorf("Fourth length = %v, want %v", len(conf.Fourth), len(fourthExpected))
+		}
+		for index, expected := range fourthExpected {
+			if conf.Fourth[index] != expected {
+				t.Errorf("Fourth[%d] = %v, want %v", index, conf.Fourth[index], expected)
+			}
+		}
+	})
+
+	t.Run("BoolField", func(t *testing.T) {
+		if !conf.Fifth {
+			t.Errorf("Fifth = %v, want true", conf.Fifth)
+		}
+	})
+
+	t.Run("StringSliceField", func(t *testing.T) {
+		sixthExpected := []string{"one", "two", "three"}
+		if len(conf.Sixth) != len(sixthExpected) {
+			t.Errorf("Sixth length = %v, want %v", len(conf.Sixth), len(sixthExpected))
+		}
+		for index, expected := range sixthExpected {
+			if conf.Sixth[index] != expected {
+				t.Errorf("Sixth[%d] = %v, want %v", index, conf.Sixth[index], expected)
+			}
+		}
+	})
+
+	t.Run("BoolSliceField", func(t *testing.T) {
+		seventhExpected := []bool{true, true, false, false}
+		if len(conf.Seventh) != len(seventhExpected) {
+			t.Errorf("Seventh length = %v, want %v", len(conf.Seventh), len(seventhExpected))
+		}
+		for index, expected := range seventhExpected {
+			if conf.Seventh[index] != expected {
+				t.Errorf("Seventh[%d] = %v, want %v", index, conf.Seventh[index], expected)
+			}
+		}
+	})
+
+	t.Run("DimensionalArrayField", func(t *testing.T) {
+		if len(conf.Eighth) != 0 {
+			t.Errorf("Eighth length = %v, want 0", len(conf.Eighth))
+		}
+	})
 }
 
 func TestJsonConfig(t *testing.T) {
@@ -102,58 +117,71 @@ func TestJsonConfig(t *testing.T) {
 
 	conf, err := FromFile[sample](envFile)
 
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if conf.First != 1 {
-		t.Fatal("first mismatch")
-	}
-
-	if conf.Second != "test" {
-		t.Fatal("second mismatch")
-	}
-
-	if conf.Third != 2.2 {
-		t.Fatal("third mismatch")
-	}
-
-	fourthExpected := []int8{1, 2, 3, 4}
-	if len(conf.Fourth) != len(fourthExpected) {
-		t.Fatal("fourth len mismatch")
-	}
-
-	for index, expected := range fourthExpected {
-		if conf.Fourth[index] != expected {
-			t.Fatal("fourth mismatch")
+	t.Run("NoError", func(t *testing.T) {
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
 		}
-	}
+	})
 
-	if !conf.Fifth {
-		t.Fatal("fifth mismatch")
-	}
-
-	sixthExpected := []string{"one", "two", "three"}
-	if len(conf.Sixth) != len(sixthExpected) {
-		t.Fatal("sixth len mismatch")
-	}
-
-	for index, expected := range sixthExpected {
-		if conf.Sixth[index] != expected {
-			t.Fatal("sixth mismatch")
+	t.Run("IntField", func(t *testing.T) {
+		if conf.First != 1 {
+			t.Errorf("First = %v, want 1", conf.First)
 		}
-	}
+	})
 
-	seventhExpected := []bool{true, true, false, false}
-	if len(conf.Seventh) != len(seventhExpected) {
-		t.Fatal("seventh len mismatch")
-	}
-
-	for index, expected := range seventhExpected {
-		if conf.Seventh[index] != expected {
-			t.Fatal("seventh mismatch")
+	t.Run("StringField", func(t *testing.T) {
+		if conf.Second != "test" {
+			t.Errorf("Second = %v, want 'test'", conf.Second)
 		}
-	}
+	})
+
+	t.Run("FloatField", func(t *testing.T) {
+		if conf.Third != 2.2 {
+			t.Errorf("Third = %v, want 2.2", conf.Third)
+		}
+	})
+
+	t.Run("Int8SliceField", func(t *testing.T) {
+		fourthExpected := []int8{1, 2, 3, 4}
+		if len(conf.Fourth) != len(fourthExpected) {
+			t.Errorf("Fourth length = %v, want %v", len(conf.Fourth), len(fourthExpected))
+		}
+		for index, expected := range fourthExpected {
+			if conf.Fourth[index] != expected {
+				t.Errorf("Fourth[%d] = %v, want %v", index, conf.Fourth[index], expected)
+			}
+		}
+	})
+
+	t.Run("BoolField", func(t *testing.T) {
+		if !conf.Fifth {
+			t.Errorf("Fifth = %v, want true", conf.Fifth)
+		}
+	})
+
+	t.Run("StringSliceField", func(t *testing.T) {
+		sixthExpected := []string{"one", "two", "three"}
+		if len(conf.Sixth) != len(sixthExpected) {
+			t.Errorf("Sixth length = %v, want %v", len(conf.Sixth), len(sixthExpected))
+		}
+		for index, expected := range sixthExpected {
+			if conf.Sixth[index] != expected {
+				t.Errorf("Sixth[%d] = %v, want %v", index, conf.Sixth[index], expected)
+			}
+		}
+	})
+
+	t.Run("BoolSliceField", func(t *testing.T) {
+		seventhExpected := []bool{true, true, false, false}
+		if len(conf.Seventh) != len(seventhExpected) {
+			t.Errorf("Seventh length = %v, want %v", len(conf.Seventh), len(seventhExpected))
+		}
+		for index, expected := range seventhExpected {
+			if conf.Seventh[index] != expected {
+				t.Errorf("Seventh[%d] = %v, want %v", index, conf.Seventh[index], expected)
+			}
+		}
+	})
 }
 
 func TestEnvConfigWithLoad(t *testing.T) {
@@ -174,69 +202,85 @@ func TestEnvConfigWithLoad(t *testing.T) {
 
 	loadErr := LoadEnvs(envFile)
 
-	if loadErr != nil {
-		t.Fatal(loadErr)
-	}
+	t.Run("LoadEnvs", func(t *testing.T) {
+		if loadErr != nil {
+			t.Fatalf("LoadEnvs failed: %v", loadErr)
+		}
+	})
 
 	conf, err := FromEnvs[sample]()
 
-	if err != nil && err.Error() != "couldn't map dimensional arrays from .env" {
-		t.Fatal(err)
-
-	}
-
-	if conf.First != 1 {
-		t.Fatal("first mismatch")
-	}
-
-	if conf.Second != "test" {
-		t.Fatal("second mismatch")
-	}
-
-	if conf.Third != 2.2 {
-		t.Fatal("third mismatch")
-	}
-
-	fourthExpected := []int8{1, 2, 3, 4}
-	if len(conf.Fourth) != len(fourthExpected) {
-		t.Fatal("fourth len mismatch")
-	}
-
-	for index, expected := range fourthExpected {
-		if conf.Fourth[index] != expected {
-			t.Fatal("fourth mismatch")
+	t.Run("ErrorHandling", func(t *testing.T) {
+		if err != nil && err.Error() != "couldn't map dimensional arrays from .env" {
+			t.Fatalf("unexpected error: %v", err)
 		}
-	}
+	})
 
-	if !conf.Fifth {
-		t.Fatal("fifth mismatch")
-	}
-
-	sixthExpected := []string{"one", "two", "three"}
-	if len(conf.Sixth) != len(sixthExpected) {
-		t.Fatal("sixth len mismatch")
-	}
-
-	for index, expected := range sixthExpected {
-		if conf.Sixth[index] != expected {
-			t.Fatal("sixth mismatch")
+	t.Run("IntField", func(t *testing.T) {
+		if conf.First != 1 {
+			t.Errorf("First = %v, want 1", conf.First)
 		}
-	}
+	})
 
-	seventhExpected := []bool{true, true, false, false}
-	if len(conf.Seventh) != len(seventhExpected) {
-		t.Fatal("seventh len mismatch")
-	}
-
-	for index, expected := range seventhExpected {
-		if conf.Seventh[index] != expected {
-			t.Fatal("seventh mismatch")
+	t.Run("StringField", func(t *testing.T) {
+		if conf.Second != "test" {
+			t.Errorf("Second = %v, want 'test'", conf.Second)
 		}
-	}
+	})
 
-	if len(conf.Eighth) != 0 {
-		t.Fatal("eight mismatch")
-	}
+	t.Run("FloatField", func(t *testing.T) {
+		if conf.Third != 2.2 {
+			t.Errorf("Third = %v, want 2.2", conf.Third)
+		}
+	})
+
+	t.Run("Int8SliceField", func(t *testing.T) {
+		fourthExpected := []int8{1, 2, 3, 4}
+		if len(conf.Fourth) != len(fourthExpected) {
+			t.Errorf("Fourth length = %v, want %v", len(conf.Fourth), len(fourthExpected))
+		}
+		for index, expected := range fourthExpected {
+			if conf.Fourth[index] != expected {
+				t.Errorf("Fourth[%d] = %v, want %v", index, conf.Fourth[index], expected)
+			}
+		}
+	})
+
+	t.Run("BoolField", func(t *testing.T) {
+		if !conf.Fifth {
+			t.Errorf("Fifth = %v, want true", conf.Fifth)
+		}
+	})
+
+	t.Run("StringSliceField", func(t *testing.T) {
+		sixthExpected := []string{"one", "two", "three"}
+		if len(conf.Sixth) != len(sixthExpected) {
+			t.Errorf("Sixth length = %v, want %v", len(conf.Sixth), len(sixthExpected))
+		}
+		for index, expected := range sixthExpected {
+			if conf.Sixth[index] != expected {
+				t.Errorf("Sixth[%d] = %v, want %v", index, conf.Sixth[index], expected)
+			}
+		}
+	})
+
+	t.Run("BoolSliceField", func(t *testing.T) {
+		seventhExpected := []bool{true, true, false, false}
+		if len(conf.Seventh) != len(seventhExpected) {
+			t.Errorf("Seventh length = %v, want %v", len(conf.Seventh), len(seventhExpected))
+		}
+		for index, expected := range seventhExpected {
+			if conf.Seventh[index] != expected {
+				t.Errorf("Seventh[%d] = %v, want %v", index, conf.Seventh[index], expected)
+			}
+		}
+	})
+
+	t.Run("DimensionalArrayField", func(t *testing.T) {
+		if len(conf.Eighth) != 0 {
+			t.Errorf("Eighth length = %v, want 0", len(conf.Eighth))
+		}
+	})
 }
 
 // TestCanConvertFromEnv tests the canConvertFromEnv function with various reflect.Kind types
@@ -731,5 +775,386 @@ func TestPrefixWithFromEnvs(t *testing.T) {
 
 	if !config.Enabled {
 		t.Errorf("Config.Enabled = %v, want true", config.Enabled)
+	}
+}
+
+// TestFromEnvs_NestedStructs tests mapping of nested structs from environment variables
+func TestFromEnvs_NestedStructs(t *testing.T) {
+	defer func() {
+		os.Unsetenv("APP_NAME")
+		os.Unsetenv("APP_VERSION")
+		os.Unsetenv("DB_HOST")
+		os.Unsetenv("DB_PORT")
+		os.Unsetenv("DB_USER")
+		os.Unsetenv("DB_PASSWORD")
+		os.Unsetenv("DB_SSL")
+	}()
+
+	type DatabaseConfig struct {
+		Host     string `env:"HOST"`
+		Port     int    `env:"PORT"`
+		User     string `env:"USER"`
+		Password string `env:"PASSWORD"`
+		SSL      bool   `env:"SSL"`
+	}
+
+	type AppConfig struct {
+		Name     string         `env:"APP_NAME"`
+		Version  string         `env:"APP_VERSION"`
+		Database DatabaseConfig `env:"DB"`
+	}
+
+	// Set environment variables
+	os.Setenv("APP_NAME", "TestApp")
+	os.Setenv("APP_VERSION", "1.0.0")
+	os.Setenv("DB_HOST", "localhost")
+	os.Setenv("DB_PORT", "5432")
+	os.Setenv("DB_USER", "admin")
+	os.Setenv("DB_PASSWORD", "secret")
+	os.Setenv("DB_SSL", "true")
+
+	config, err := FromEnvs[AppConfig]()
+	if err != nil {
+		t.Fatalf("FromEnvs failed: %v", err)
+	}
+
+	// Test top-level fields
+	if config.Name != "TestApp" {
+		t.Errorf("AppConfig.Name = %v, want 'TestApp'", config.Name)
+	}
+
+	if config.Version != "1.0.0" {
+		t.Errorf("AppConfig.Version = %v, want '1.0.0'", config.Version)
+	}
+
+	// Test nested struct fields
+	if config.Database.Host != "localhost" {
+		t.Errorf("DatabaseConfig.Host = %v, want 'localhost'", config.Database.Host)
+	}
+
+	if config.Database.Port != 5432 {
+		t.Errorf("DatabaseConfig.Port = %v, want 5432", config.Database.Port)
+	}
+
+	if config.Database.User != "admin" {
+		t.Errorf("DatabaseConfig.User = %v, want 'admin'", config.Database.User)
+	}
+
+	if config.Database.Password != "secret" {
+		t.Errorf("DatabaseConfig.Password = %v, want 'secret'", config.Database.Password)
+	}
+
+	if !config.Database.SSL {
+		t.Errorf("DatabaseConfig.SSL = %v, want true", config.Database.SSL)
+	}
+}
+
+// TestFromEnvs_NestedStructPointers tests mapping of nested struct pointers from environment variables
+func TestFromEnvs_NestedStructPointers(t *testing.T) {
+	defer func() {
+		os.Unsetenv("HOST")
+		os.Unsetenv("PORT")
+		os.Unsetenv("CACHE_HOST")
+		os.Unsetenv("CACHE_PORT")
+		os.Unsetenv("CACHE_TTL")
+	}()
+
+	type CacheConfig struct {
+		Host string `env:"HOST"`
+		Port int    `env:"PORT"`
+		TTL  int    `env:"TTL"`
+	}
+
+	type ServerConfig struct {
+		Host  string       `env:"HOST"`
+		Port  int          `env:"PORT"`
+		Cache *CacheConfig `env:"CACHE"`
+	}
+
+	// Set environment variables
+	os.Setenv("HOST", "0.0.0.0")
+	os.Setenv("PORT", "8080")
+	os.Setenv("CACHE_HOST", "redis.local")
+	os.Setenv("CACHE_PORT", "6379")
+	os.Setenv("CACHE_TTL", "3600")
+
+	config, err := FromEnvs[ServerConfig]()
+	if err != nil {
+		t.Fatalf("FromEnvs failed: %v", err)
+	}
+
+	// Test top-level fields
+	if config.Host != "0.0.0.0" {
+		t.Errorf("ServerConfig.Host = %v, want '0.0.0.0'", config.Host)
+	}
+
+	if config.Port != 8080 {
+		t.Errorf("ServerConfig.Port = %v, want 8080", config.Port)
+	}
+
+	// Test nested pointer to struct
+	if config.Cache == nil {
+		t.Fatal("ServerConfig.Cache is nil, expected initialized struct")
+	}
+
+	if config.Cache.Host != "redis.local" {
+		t.Errorf("CacheConfig.Host = %v, want 'redis.local'", config.Cache.Host)
+	}
+
+	if config.Cache.Port != 6379 {
+		t.Errorf("CacheConfig.Port = %v, want 6379", config.Cache.Port)
+	}
+
+	if config.Cache.TTL != 3600 {
+		t.Errorf("CacheConfig.TTL = %v, want 3600", config.Cache.TTL)
+	}
+}
+
+// TestFromEnvs_MultiLevelNesting tests multiple levels of nested structs
+func TestFromEnvs_MultiLevelNesting(t *testing.T) {
+	defer func() {
+		os.Unsetenv("NAME")
+		os.Unsetenv("DB_PRIMARY_HOST")
+		os.Unsetenv("DB_PRIMARY_PORT")
+		os.Unsetenv("DB_REPLICA_HOST")
+		os.Unsetenv("DB_REPLICA_PORT")
+	}()
+
+	type Connection struct {
+		Host string `env:"HOST"`
+		Port int    `env:"PORT"`
+	}
+
+	type DatabaseCluster struct {
+		Primary Connection `env:"PRIMARY"`
+		Replica Connection `env:"REPLICA"`
+	}
+
+	type Application struct {
+		Name     string          `env:"NAME"`
+		Database DatabaseCluster `env:"DB"`
+	}
+
+	// Set environment variables
+	os.Setenv("NAME", "MultiLevelApp")
+	os.Setenv("DB_PRIMARY_HOST", "primary.db.local")
+	os.Setenv("DB_PRIMARY_PORT", "5432")
+	os.Setenv("DB_REPLICA_HOST", "replica.db.local")
+	os.Setenv("DB_REPLICA_PORT", "5433")
+
+	config, err := FromEnvs[Application]()
+	if err != nil {
+		t.Fatalf("FromEnvs failed: %v", err)
+	}
+
+	if config.Name != "MultiLevelApp" {
+		t.Errorf("Application.Name = %v, want 'MultiLevelApp'", config.Name)
+	}
+
+	if config.Database.Primary.Host != "primary.db.local" {
+		t.Errorf("Primary.Host = %v, want 'primary.db.local'", config.Database.Primary.Host)
+	}
+
+	if config.Database.Primary.Port != 5432 {
+		t.Errorf("Primary.Port = %v, want 5432", config.Database.Primary.Port)
+	}
+
+	if config.Database.Replica.Host != "replica.db.local" {
+		t.Errorf("Replica.Host = %v, want 'replica.db.local'", config.Database.Replica.Host)
+	}
+
+	if config.Database.Replica.Port != 5433 {
+		t.Errorf("Replica.Port = %v, want 5433", config.Database.Replica.Port)
+	}
+}
+
+// TestFromEnvs_MixedNestedTypes tests a mix of nested structs, pointers, and primitive types
+func TestFromEnvs_MixedNestedTypes(t *testing.T) {
+	defer func() {
+		os.Unsetenv("NAME")
+		os.Unsetenv("PORT")
+		os.Unsetenv("DEBUG")
+		os.Unsetenv("AUTH_ENABLED")
+		os.Unsetenv("AUTH_TOKEN")
+		os.Unsetenv("LIMITS_MAX_CONN")
+		os.Unsetenv("LIMITS_TIMEOUT")
+	}()
+
+	type AuthConfig struct {
+		Enabled bool   `env:"ENABLED"`
+		Token   string `env:"TOKEN"`
+	}
+
+	type LimitsConfig struct {
+		MaxConnections int     `env:"MAX_CONN"`
+		Timeout        float64 `env:"TIMEOUT"`
+	}
+
+	type ServiceConfig struct {
+		Name   string       `env:"NAME"`
+		Port   int          `env:"PORT"`
+		Debug  bool         `env:"DEBUG"`
+		Auth   *AuthConfig  `env:"AUTH"`
+		Limits LimitsConfig `env:"LIMITS"`
+	}
+
+	// Set environment variables
+	os.Setenv("NAME", "API")
+	os.Setenv("PORT", "3000")
+	os.Setenv("DEBUG", "true")
+	os.Setenv("AUTH_ENABLED", "true")
+	os.Setenv("AUTH_TOKEN", "secret-token-123")
+	os.Setenv("LIMITS_MAX_CONN", "100")
+	os.Setenv("LIMITS_TIMEOUT", "30.5")
+
+	config, err := FromEnvs[ServiceConfig]()
+	if err != nil {
+		t.Fatalf("FromEnvs failed: %v", err)
+	}
+
+	if config.Name != "API" {
+		t.Errorf("ServiceConfig.Name = %v, want 'API'", config.Name)
+	}
+
+	if config.Port != 3000 {
+		t.Errorf("ServiceConfig.Port = %v, want 3000", config.Port)
+	}
+
+	if !config.Debug {
+		t.Errorf("ServiceConfig.Debug = %v, want true", config.Debug)
+	}
+
+	if config.Auth == nil {
+		t.Fatal("ServiceConfig.Auth is nil")
+	}
+
+	if !config.Auth.Enabled {
+		t.Errorf("AuthConfig.Enabled = %v, want true", config.Auth.Enabled)
+	}
+
+	if config.Auth.Token != "secret-token-123" {
+		t.Errorf("AuthConfig.Token = %v, want 'secret-token-123'", config.Auth.Token)
+	}
+
+	if config.Limits.MaxConnections != 100 {
+		t.Errorf("LimitsConfig.MaxConnections = %v, want 100", config.Limits.MaxConnections)
+	}
+
+	if config.Limits.Timeout != 30.5 {
+		t.Errorf("LimitsConfig.Timeout = %v, want 30.5", config.Limits.Timeout)
+	}
+}
+
+// TestFromEnvs_NestedStructWithoutTags tests nested structs without env tags
+func TestFromEnvs_NestedStructWithoutTags(t *testing.T) {
+	defer func() {
+		os.Unsetenv("ENABLED")
+		os.Unsetenv("TIMEOUT")
+	}()
+
+	type Settings struct {
+		Enabled bool `env:"ENABLED"`
+		Timeout int  `env:"TIMEOUT"`
+	}
+
+	type Config struct {
+		Settings Settings // No env tag - fields should map directly
+	}
+
+	os.Setenv("ENABLED", "true")
+	os.Setenv("TIMEOUT", "60")
+
+	config, err := FromEnvs[Config]()
+	if err != nil {
+		t.Fatalf("FromEnvs failed: %v", err)
+	}
+
+	if !config.Settings.Enabled {
+		t.Errorf("Settings.Enabled = %v, want true", config.Settings.Enabled)
+	}
+
+	if config.Settings.Timeout != 60 {
+		t.Errorf("Settings.Timeout = %v, want 60", config.Settings.Timeout)
+	}
+}
+
+// TestFromEnvs_NestedStructWithSlices tests nested structs containing slices
+func TestFromEnvs_NestedStructWithSlices(t *testing.T) {
+	defer func() {
+		os.Unsetenv("API_BASE_URL")
+		os.Unsetenv("API_ENDPOINTS")
+		os.Unsetenv("API_ALLOWED_ORIGINS")
+	}()
+
+	type APIConfig struct {
+		BaseURL        string   `env:"BASE_URL"`
+		Endpoints      []string `env:"ENDPOINTS"`
+		AllowedOrigins []string `env:"ALLOWED_ORIGINS"`
+	}
+
+	type Config struct {
+		API APIConfig `env:"API"`
+	}
+
+	os.Setenv("API_BASE_URL", "https://api.example.com")
+	os.Setenv("API_ENDPOINTS", "/users,/posts,/comments")
+	os.Setenv("API_ALLOWED_ORIGINS", "http://localhost:3000,https://example.com")
+
+	config, err := FromEnvs[Config]()
+	if err != nil {
+		t.Fatalf("FromEnvs failed: %v", err)
+	}
+
+	if config.API.BaseURL != "https://api.example.com" {
+		t.Errorf("APIConfig.BaseURL = %v, want 'https://api.example.com'", config.API.BaseURL)
+	}
+
+	expectedEndpoints := []string{"/users", "/posts", "/comments"}
+	if !reflect.DeepEqual(config.API.Endpoints, expectedEndpoints) {
+		t.Errorf("APIConfig.Endpoints = %v, want %v", config.API.Endpoints, expectedEndpoints)
+	}
+
+	expectedOrigins := []string{"http://localhost:3000", "https://example.com"}
+	if !reflect.DeepEqual(config.API.AllowedOrigins, expectedOrigins) {
+		t.Errorf("APIConfig.AllowedOrigins = %v, want %v", config.API.AllowedOrigins, expectedOrigins)
+	}
+}
+
+// TestFromEnvs_NestedStructPartialMapping tests when only some nested fields have values
+func TestFromEnvs_NestedStructPartialMapping(t *testing.T) {
+	defer func() {
+		os.Unsetenv("NAME")
+		os.Unsetenv("DB_HOST")
+	}()
+
+	type Database struct {
+		Host string `env:"HOST"`
+		Port int    `env:"PORT"` // This won't be set
+	}
+
+	type Config struct {
+		Name     string   `env:"NAME"`
+		Database Database `env:"DB"`
+	}
+
+	os.Setenv("NAME", "PartialApp")
+	os.Setenv("DB_HOST", "localhost")
+	// DB_PORT is not set
+
+	config, err := FromEnvs[Config]()
+	if err != nil {
+		t.Fatalf("FromEnvs failed: %v", err)
+	}
+
+	if config.Name != "PartialApp" {
+		t.Errorf("Config.Name = %v, want 'PartialApp'", config.Name)
+	}
+
+	if config.Database.Host != "localhost" {
+		t.Errorf("Database.Host = %v, want 'localhost'", config.Database.Host)
+	}
+
+	if config.Database.Port != 0 {
+		t.Errorf("Database.Port = %v, want 0 (zero value)", config.Database.Port)
 	}
 }

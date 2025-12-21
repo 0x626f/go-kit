@@ -8,12 +8,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/0x626f/go-kit/utils"
 	"os"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/0x626f/go-kit/utils"
 )
 
 // Configuration file extensions and tag constants
@@ -294,32 +295,9 @@ func FromEnvs[T any]() (*T, error) {
 
 	var err error
 	instance := utils.NewInstanceOf[T]()
-	instanceType := reflect.TypeOf(instance).Elem()
 	instanceValue := reflect.ValueOf(instance).Elem()
 
-	for index := 0; index < instanceType.NumField(); index++ {
-		field := instanceType.Field(index)
-
-		tag := field.Tag.Get(tagEnv)
-
-		if tag == "" {
-			continue
-		}
-
-		value, exists := os.LookupEnv(getPrefixedEnv(tag))
-
-		if !exists {
-			continue
-		}
-
-		ref := instanceValue.Field(index)
-
-		if !ref.CanSet() {
-			continue
-		}
-
-		err = errors.Join(err, mapPrimaryValue(ref, value))
-	}
+	err = mapStructFromEnvs(instanceValue, "")
 
 	return instance, err
 }
@@ -501,9 +479,19 @@ func mapEnvConfig[T any](filename string) (*T, error) {
 // This function handles primitive types (string, numeric types, bool) and slices of these types.
 // For slices, it splits the string by comma and converts each element.
 //
+// Supported types:
+//   - String: Direct assignment
+//   - Numeric types: int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64
+//   - Floating point: float32, float64
+//   - Boolean: true/false or 1/0
+//   - Slices: Comma-separated values (e.g., "1,2,3" for []int)
+//
 // Parameters:
 //   - ref: The reflect.Value to set
 //   - value: The string value to convert and set
+//
+// Returns:
+//   - error: An error if conversion fails or if the type is unsupported
 func mapPrimaryValue(ref reflect.Value, value string) error {
 	var aggError error
 
@@ -596,8 +584,92 @@ func mapPrimaryValue(ref reflect.Value, value string) error {
 		}
 
 		ref.Set(slice)
+
 	default:
 		ref.SetZero()
 	}
 	return aggError
+}
+
+// addNestedPrefix adds a prefix to an environment variable name for nested struct field mapping.
+// If the prefix is empty, the envName is returned unchanged.
+// This is used internally to construct hierarchical environment variable names for nested structs.
+//
+// Parameters:
+//   - envName: The environment variable name to prefix
+//   - prefix: The prefix to prepend
+//
+// Returns:
+//   - string: The prefixed environment variable name in the format "PREFIX_ENVNAME"
+//
+// Example:
+//
+//	addNestedPrefix("HOST", "DB") // Returns "DB_HOST"
+//	addNestedPrefix("HOST", "")   // Returns "HOST"
+func addNestedPrefix(envName, prefix string) string {
+	if prefix == "" {
+		return envName
+	}
+	return prefix + "_" + envName
+}
+
+// mapStructFromEnvs recursively maps environment variables to struct fields.
+// This function supports nested structs, struct pointers, and all primitive types.
+//
+// For nested structs, it builds hierarchical environment variable names by combining
+// prefixes from parent structs with child field names. For example, a nested struct
+// with env tag "DB" containing a field with env tag "HOST" will look for "DB_HOST".
+//
+// Parameters:
+//   - ref: The reflect.Value of the struct to populate
+//   - prefix: The accumulated prefix for nested struct fields
+//
+// Returns:
+//   - error: An aggregated error if any field mapping fails
+//
+// Example struct mapping:
+//
+//	type Config struct {
+//	    Database struct {
+//	        Host string `env:"HOST"`
+//	        Port int    `env:"PORT"`
+//	    } `env:"DB"`
+//	}
+//	// Will look for environment variables: DB_HOST, DB_PORT
+func mapStructFromEnvs(ref reflect.Value, prefix string) (err error) {
+	refType := ref.Type()
+	for index := 0; index < ref.NumField(); index++ {
+		field := refType.Field(index)
+
+		tag := field.Tag.Get(tagEnv)
+
+		if tag == "-" {
+			continue
+		}
+
+		fieldRef := ref.Field(index)
+
+		if !fieldRef.CanSet() {
+			continue
+		}
+
+		if fieldRef.Kind() == reflect.Struct {
+			err = errors.Join(err, mapStructFromEnvs(fieldRef, addNestedPrefix(tag, prefix)))
+		} else if fieldRef.Kind() == reflect.Pointer && fieldRef.Type().Elem().Kind() == reflect.Struct {
+			fieldRef.Set(reflect.New(fieldRef.Type().Elem()))
+			err = errors.Join(err, mapStructFromEnvs(fieldRef.Elem(), addNestedPrefix(tag, prefix)))
+		} else {
+			if tag == "" {
+				continue
+			}
+
+			value, exists := os.LookupEnv(getPrefixedEnv(addNestedPrefix(tag, prefix)))
+
+			if !exists {
+				continue
+			}
+			err = errors.Join(err, mapPrimaryValue(fieldRef, value))
+		}
+	}
+	return
 }
