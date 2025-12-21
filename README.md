@@ -12,6 +12,7 @@
 </div>
 
 <div align="center">
+    <h6>Currently under active development and breaking changes are possible</h6>
     <h3>The Go-Kit library offers a collection of common data structures, algorithms, and utilities designed to streamline and simplify the development process.</h3>
 </div>
 
