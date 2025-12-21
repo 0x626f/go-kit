@@ -1158,3 +1158,642 @@ func TestFromEnvs_NestedStructPartialMapping(t *testing.T) {
 		t.Errorf("Database.Port = %v, want 0 (zero value)", config.Database.Port)
 	}
 }
+
+// TestDefaultTag_BasicTypes tests the default tag with various basic types
+func TestDefaultTag_BasicTypes(t *testing.T) {
+	defer func() {
+		os.Unsetenv("STRING_VAR")
+		os.Unsetenv("INT_VAR")
+		os.Unsetenv("BOOL_VAR")
+		os.Unsetenv("FLOAT_VAR")
+	}()
+
+	type Config struct {
+		StringWithDefault string  `env:"STRING_VAR" default:"default_string"`
+		IntWithDefault    int     `env:"INT_VAR" default:"42"`
+		BoolWithDefault   bool    `env:"BOOL_VAR" default:"true"`
+		FloatWithDefault  float64 `env:"FLOAT_VAR" default:"3.14"`
+	}
+
+	t.Run("UseDefaultWhenEnvNotSet", func(t *testing.T) {
+		config, err := FromEnvs[Config]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		if config.StringWithDefault != "default_string" {
+			t.Errorf("StringWithDefault = %v, want 'default_string'", config.StringWithDefault)
+		}
+
+		if config.IntWithDefault != 42 {
+			t.Errorf("IntWithDefault = %v, want 42", config.IntWithDefault)
+		}
+
+		if !config.BoolWithDefault {
+			t.Errorf("BoolWithDefault = %v, want true", config.BoolWithDefault)
+		}
+
+		if config.FloatWithDefault != 3.14 {
+			t.Errorf("FloatWithDefault = %v, want 3.14", config.FloatWithDefault)
+		}
+	})
+
+	t.Run("EnvOverridesDefault", func(t *testing.T) {
+		os.Setenv("STRING_VAR", "env_string")
+		os.Setenv("INT_VAR", "100")
+		os.Setenv("BOOL_VAR", "false")
+		os.Setenv("FLOAT_VAR", "2.71")
+
+		config, err := FromEnvs[Config]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		if config.StringWithDefault != "env_string" {
+			t.Errorf("StringWithDefault = %v, want 'env_string'", config.StringWithDefault)
+		}
+
+		if config.IntWithDefault != 100 {
+			t.Errorf("IntWithDefault = %v, want 100", config.IntWithDefault)
+		}
+
+		if config.BoolWithDefault {
+			t.Errorf("BoolWithDefault = %v, want false", config.BoolWithDefault)
+		}
+
+		if config.FloatWithDefault != 2.71 {
+			t.Errorf("FloatWithDefault = %v, want 2.71", config.FloatWithDefault)
+		}
+	})
+}
+
+// TestDefaultTag_NumericTypes tests default tag with various numeric types
+func TestDefaultTag_NumericTypes(t *testing.T) {
+	defer func() {
+		os.Unsetenv("INT8_VAR")
+		os.Unsetenv("INT16_VAR")
+		os.Unsetenv("INT32_VAR")
+		os.Unsetenv("INT64_VAR")
+		os.Unsetenv("UINT_VAR")
+		os.Unsetenv("UINT8_VAR")
+		os.Unsetenv("UINT16_VAR")
+		os.Unsetenv("UINT32_VAR")
+		os.Unsetenv("UINT64_VAR")
+		os.Unsetenv("FLOAT32_VAR")
+	}()
+
+	type Config struct {
+		Int8Val    int8    `env:"INT8_VAR" default:"127"`
+		Int16Val   int16   `env:"INT16_VAR" default:"32767"`
+		Int32Val   int32   `env:"INT32_VAR" default:"2147483647"`
+		Int64Val   int64   `env:"INT64_VAR" default:"9223372036854775807"`
+		UintVal    uint    `env:"UINT_VAR" default:"42"`
+		Uint8Val   uint8   `env:"UINT8_VAR" default:"255"`
+		Uint16Val  uint16  `env:"UINT16_VAR" default:"65535"`
+		Uint32Val  uint32  `env:"UINT32_VAR" default:"4294967295"`
+		Uint64Val  uint64  `env:"UINT64_VAR" default:"18446744073709551615"`
+		Float32Val float32 `env:"FLOAT32_VAR" default:"3.14159"`
+	}
+
+	config, err := FromEnvs[Config]()
+	if err != nil {
+		t.Fatalf("FromEnvs failed: %v", err)
+	}
+
+	t.Run("Int8Default", func(t *testing.T) {
+		if config.Int8Val != 127 {
+			t.Errorf("Int8Val = %v, want 127", config.Int8Val)
+		}
+	})
+
+	t.Run("Int16Default", func(t *testing.T) {
+		if config.Int16Val != 32767 {
+			t.Errorf("Int16Val = %v, want 32767", config.Int16Val)
+		}
+	})
+
+	t.Run("Int32Default", func(t *testing.T) {
+		if config.Int32Val != 2147483647 {
+			t.Errorf("Int32Val = %v, want 2147483647", config.Int32Val)
+		}
+	})
+
+	t.Run("Int64Default", func(t *testing.T) {
+		if config.Int64Val != 9223372036854775807 {
+			t.Errorf("Int64Val = %v, want 9223372036854775807", config.Int64Val)
+		}
+	})
+
+	t.Run("UintDefault", func(t *testing.T) {
+		if config.UintVal != 42 {
+			t.Errorf("UintVal = %v, want 42", config.UintVal)
+		}
+	})
+
+	t.Run("Uint8Default", func(t *testing.T) {
+		if config.Uint8Val != 255 {
+			t.Errorf("Uint8Val = %v, want 255", config.Uint8Val)
+		}
+	})
+
+	t.Run("Uint16Default", func(t *testing.T) {
+		if config.Uint16Val != 65535 {
+			t.Errorf("Uint16Val = %v, want 65535", config.Uint16Val)
+		}
+	})
+
+	t.Run("Uint32Default", func(t *testing.T) {
+		if config.Uint32Val != 4294967295 {
+			t.Errorf("Uint32Val = %v, want 4294967295", config.Uint32Val)
+		}
+	})
+
+	t.Run("Uint64Default", func(t *testing.T) {
+		if config.Uint64Val != 18446744073709551615 {
+			t.Errorf("Uint64Val = %v, want 18446744073709551615", config.Uint64Val)
+		}
+	})
+
+	t.Run("Float32Default", func(t *testing.T) {
+		if config.Float32Val != 3.14159 {
+			t.Errorf("Float32Val = %v, want 3.14159", config.Float32Val)
+		}
+	})
+}
+
+// TestDefaultTag_Slices tests default tag with slice types
+func TestDefaultTag_Slices(t *testing.T) {
+	defer func() {
+		os.Unsetenv("INT_SLICE")
+		os.Unsetenv("STRING_SLICE")
+		os.Unsetenv("BOOL_SLICE")
+	}()
+
+	type Config struct {
+		IntSlice    []int    `env:"INT_SLICE" default:"1,2,3,4,5"`
+		StringSlice []string `env:"STRING_SLICE" default:"one,two,three"`
+		BoolSlice   []bool   `env:"BOOL_SLICE" default:"true,false,true"`
+	}
+
+	t.Run("UseDefaultSlices", func(t *testing.T) {
+		config, err := FromEnvs[Config]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		expectedIntSlice := []int{1, 2, 3, 4, 5}
+		if !reflect.DeepEqual(config.IntSlice, expectedIntSlice) {
+			t.Errorf("IntSlice = %v, want %v", config.IntSlice, expectedIntSlice)
+		}
+
+		expectedStringSlice := []string{"one", "two", "three"}
+		if !reflect.DeepEqual(config.StringSlice, expectedStringSlice) {
+			t.Errorf("StringSlice = %v, want %v", config.StringSlice, expectedStringSlice)
+		}
+
+		expectedBoolSlice := []bool{true, false, true}
+		if !reflect.DeepEqual(config.BoolSlice, expectedBoolSlice) {
+			t.Errorf("BoolSlice = %v, want %v", config.BoolSlice, expectedBoolSlice)
+		}
+	})
+
+	t.Run("EnvOverridesDefaultSlices", func(t *testing.T) {
+		os.Setenv("INT_SLICE", "10,20,30")
+		os.Setenv("STRING_SLICE", "alpha,beta")
+		os.Setenv("BOOL_SLICE", "false,false")
+
+		config, err := FromEnvs[Config]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		expectedIntSlice := []int{10, 20, 30}
+		if !reflect.DeepEqual(config.IntSlice, expectedIntSlice) {
+			t.Errorf("IntSlice = %v, want %v", config.IntSlice, expectedIntSlice)
+		}
+
+		expectedStringSlice := []string{"alpha", "beta"}
+		if !reflect.DeepEqual(config.StringSlice, expectedStringSlice) {
+			t.Errorf("StringSlice = %v, want %v", config.StringSlice, expectedStringSlice)
+		}
+
+		expectedBoolSlice := []bool{false, false}
+		if !reflect.DeepEqual(config.BoolSlice, expectedBoolSlice) {
+			t.Errorf("BoolSlice = %v, want %v", config.BoolSlice, expectedBoolSlice)
+		}
+	})
+}
+
+// TestDefaultTag_EmptyString tests default tag with empty string values
+func TestDefaultTag_EmptyString(t *testing.T) {
+	defer func() {
+		os.Unsetenv("EMPTY_VAR")
+	}()
+
+	type Config struct {
+		EmptyDefault string `env:"EMPTY_VAR" default:""`
+		NoDefault    string `env:"NO_DEFAULT_VAR"`
+	}
+
+	config, err := FromEnvs[Config]()
+	if err != nil {
+		t.Fatalf("FromEnvs failed: %v", err)
+	}
+
+	t.Run("EmptyStringDefault", func(t *testing.T) {
+		if config.EmptyDefault != "" {
+			t.Errorf("EmptyDefault = %v, want empty string", config.EmptyDefault)
+		}
+	})
+
+	t.Run("NoDefaultStaysZero", func(t *testing.T) {
+		if config.NoDefault != "" {
+			t.Errorf("NoDefault = %v, want empty string (zero value)", config.NoDefault)
+		}
+	})
+}
+
+// TestDefaultTag_NestedStructs tests default tag with nested structs
+func TestDefaultTag_NestedStructs(t *testing.T) {
+	// Clean up before and after test
+	os.Unsetenv("NAME")
+	os.Unsetenv("DB_HOST")
+	os.Unsetenv("DB_PORT")
+	os.Unsetenv("DB_USER")
+
+	defer func() {
+		os.Unsetenv("NAME")
+		os.Unsetenv("DB_HOST")
+		os.Unsetenv("DB_PORT")
+		os.Unsetenv("DB_USER")
+	}()
+
+	type DatabaseConfig struct {
+		Host string `env:"HOST" default:"localhost"`
+		Port int    `env:"PORT" default:"5432"`
+		User string `env:"USER" default:"postgres"`
+	}
+
+	type AppConfig struct {
+		Name     string         `env:"NAME" default:"MyApp"`
+		Database DatabaseConfig `env:"DB"`
+	}
+
+	t.Run("UseNestedDefaults", func(t *testing.T) {
+		config, err := FromEnvs[AppConfig]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		if config.Name != "MyApp" {
+			t.Errorf("Name = %v, want 'MyApp'", config.Name)
+		}
+
+		if config.Database.Host != "localhost" {
+			t.Errorf("Database.Host = %v, want 'localhost'", config.Database.Host)
+		}
+
+		if config.Database.Port != 5432 {
+			t.Errorf("Database.Port = %v, want 5432", config.Database.Port)
+		}
+
+		if config.Database.User != "postgres" {
+			t.Errorf("Database.User = %v, want 'postgres'", config.Database.User)
+		}
+	})
+
+	t.Run("EnvOverridesNestedDefaults", func(t *testing.T) {
+		os.Setenv("NAME", "CustomApp")
+		os.Setenv("DB_HOST", "db.example.com")
+		os.Setenv("DB_PORT", "3306")
+		os.Setenv("DB_USER", "admin")
+
+		config, err := FromEnvs[AppConfig]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		if config.Name != "CustomApp" {
+			t.Errorf("Name = %v, want 'CustomApp'", config.Name)
+		}
+
+		if config.Database.Host != "db.example.com" {
+			t.Errorf("Database.Host = %v, want 'db.example.com'", config.Database.Host)
+		}
+
+		if config.Database.Port != 3306 {
+			t.Errorf("Database.Port = %v, want 3306", config.Database.Port)
+		}
+
+		if config.Database.User != "admin" {
+			t.Errorf("Database.User = %v, want 'admin'", config.Database.User)
+		}
+	})
+}
+
+// TestDefaultTag_WithPrefix tests default tag with environment variable prefixing
+func TestDefaultTag_WithPrefix(t *testing.T) {
+	originalPrefix := GetEnvPrefix()
+	defer func() {
+		SetEnvPrefix(originalPrefix)
+		os.Unsetenv("MYAPP_PORT")
+		os.Unsetenv("MYAPP_DEBUG")
+	}()
+
+	type Config struct {
+		Port  int  `env:"PORT" default:"8080"`
+		Debug bool `env:"DEBUG" default:"false"`
+	}
+
+	t.Run("DefaultWithPrefix", func(t *testing.T) {
+		SetEnvPrefix("MYAPP")
+
+		config, err := FromEnvs[Config]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		if config.Port != 8080 {
+			t.Errorf("Port = %v, want 8080", config.Port)
+		}
+
+		if config.Debug {
+			t.Errorf("Debug = %v, want false", config.Debug)
+		}
+	})
+
+	t.Run("PrefixedEnvOverridesDefault", func(t *testing.T) {
+		SetEnvPrefix("MYAPP")
+		os.Setenv("MYAPP_PORT", "9000")
+		os.Setenv("MYAPP_DEBUG", "true")
+
+		config, err := FromEnvs[Config]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		if config.Port != 9000 {
+			t.Errorf("Port = %v, want 9000", config.Port)
+		}
+
+		if !config.Debug {
+			t.Errorf("Debug = %v, want true", config.Debug)
+		}
+	})
+}
+
+// TestDefaultTag_MixedConfiguration tests a mix of fields with and without defaults
+func TestDefaultTag_MixedConfiguration(t *testing.T) {
+	defer func() {
+		os.Unsetenv("REQUIRED_VAR")
+		os.Unsetenv("OPTIONAL_VAR")
+	}()
+
+	type Config struct {
+		RequiredField string `env:"REQUIRED_VAR"`
+		OptionalField string `env:"OPTIONAL_VAR" default:"optional_default"`
+		DefaultField  int    `env:"DEFAULT_VAR" default:"100"`
+	}
+
+	t.Run("MixedWithoutEnv", func(t *testing.T) {
+		config, err := FromEnvs[Config]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		// Required field not set, should be zero value
+		if config.RequiredField != "" {
+			t.Errorf("RequiredField = %v, want empty string (zero value)", config.RequiredField)
+		}
+
+		// Optional field should use default
+		if config.OptionalField != "optional_default" {
+			t.Errorf("OptionalField = %v, want 'optional_default'", config.OptionalField)
+		}
+
+		// Default field should use default
+		if config.DefaultField != 100 {
+			t.Errorf("DefaultField = %v, want 100", config.DefaultField)
+		}
+	})
+
+	t.Run("MixedWithEnv", func(t *testing.T) {
+		os.Setenv("REQUIRED_VAR", "required_value")
+		os.Setenv("OPTIONAL_VAR", "env_value")
+
+		config, err := FromEnvs[Config]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		if config.RequiredField != "required_value" {
+			t.Errorf("RequiredField = %v, want 'required_value'", config.RequiredField)
+		}
+
+		if config.OptionalField != "env_value" {
+			t.Errorf("OptionalField = %v, want 'env_value'", config.OptionalField)
+		}
+
+		// Default field still uses default since env not set
+		if config.DefaultField != 100 {
+			t.Errorf("DefaultField = %v, want 100", config.DefaultField)
+		}
+	})
+}
+
+// TestDefaultTag_InvalidDefaultValue tests handling of invalid default values
+func TestDefaultTag_InvalidDefaultValue(t *testing.T) {
+	type Config struct {
+		InvalidInt   int     `env:"INVALID_INT" default:"not_a_number"`
+		InvalidBool  bool    `env:"INVALID_BOOL" default:"not_a_bool"`
+		InvalidFloat float64 `env:"INVALID_FLOAT" default:"not_a_float"`
+	}
+
+	t.Run("InvalidDefaultsReturnError", func(t *testing.T) {
+		_, err := FromEnvs[Config]()
+		if err == nil {
+			t.Error("FromEnvs should return error for invalid default values")
+		}
+	})
+}
+
+// TestDefaultTag_NestedStructPointers tests default tag with nested struct pointers
+func TestDefaultTag_NestedStructPointers(t *testing.T) {
+	defer func() {
+		os.Unsetenv("CACHE_HOST")
+		os.Unsetenv("CACHE_PORT")
+	}()
+
+	type CacheConfig struct {
+		Host string `env:"HOST" default:"localhost"`
+		Port int    `env:"PORT" default:"6379"`
+	}
+
+	type Config struct {
+		Cache *CacheConfig `env:"CACHE"`
+	}
+
+	t.Run("DefaultsInPointerStruct", func(t *testing.T) {
+		config, err := FromEnvs[Config]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		if config.Cache == nil {
+			t.Fatal("Cache should not be nil")
+		}
+
+		if config.Cache.Host != "localhost" {
+			t.Errorf("Cache.Host = %v, want 'localhost'", config.Cache.Host)
+		}
+
+		if config.Cache.Port != 6379 {
+			t.Errorf("Cache.Port = %v, want 6379", config.Cache.Port)
+		}
+	})
+
+	t.Run("EnvOverridesDefaultsInPointerStruct", func(t *testing.T) {
+		os.Setenv("CACHE_HOST", "redis.example.com")
+		os.Setenv("CACHE_PORT", "6380")
+
+		config, err := FromEnvs[Config]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		if config.Cache == nil {
+			t.Fatal("Cache should not be nil")
+		}
+
+		if config.Cache.Host != "redis.example.com" {
+			t.Errorf("Cache.Host = %v, want 'redis.example.com'", config.Cache.Host)
+		}
+
+		if config.Cache.Port != 6380 {
+			t.Errorf("Cache.Port = %v, want 6380", config.Cache.Port)
+		}
+	})
+}
+
+// TestDefaultTag_MultiLevelNesting tests default tag with multiple levels of nesting
+func TestDefaultTag_MultiLevelNesting(t *testing.T) {
+	defer func() {
+		os.Unsetenv("NAME")
+		os.Unsetenv("DB_PRIMARY_HOST")
+		os.Unsetenv("DB_PRIMARY_PORT")
+		os.Unsetenv("DB_REPLICA_HOST")
+		os.Unsetenv("DB_REPLICA_PORT")
+	}()
+
+	type Connection struct {
+		Host string `env:"HOST" default:"localhost"`
+		Port int    `env:"PORT" default:"5432"`
+	}
+
+	type DatabaseCluster struct {
+		Primary Connection `env:"PRIMARY"`
+		Replica Connection `env:"REPLICA"`
+	}
+
+	type Application struct {
+		Name     string          `env:"NAME" default:"DefaultApp"`
+		Database DatabaseCluster `env:"DB"`
+	}
+
+	t.Run("MultiLevelDefaults", func(t *testing.T) {
+		config, err := FromEnvs[Application]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		if config.Name != "DefaultApp" {
+			t.Errorf("Name = %v, want 'DefaultApp'", config.Name)
+		}
+
+		if config.Database.Primary.Host != "localhost" {
+			t.Errorf("Database.Primary.Host = %v, want 'localhost'", config.Database.Primary.Host)
+		}
+
+		if config.Database.Primary.Port != 5432 {
+			t.Errorf("Database.Primary.Port = %v, want 5432", config.Database.Primary.Port)
+		}
+
+		if config.Database.Replica.Host != "localhost" {
+			t.Errorf("Database.Replica.Host = %v, want 'localhost'", config.Database.Replica.Host)
+		}
+
+		if config.Database.Replica.Port != 5432 {
+			t.Errorf("Database.Replica.Port = %v, want 5432", config.Database.Replica.Port)
+		}
+	})
+
+	t.Run("PartialEnvWithDefaults", func(t *testing.T) {
+		os.Setenv("NAME", "ProductionApp")
+		os.Setenv("DB_PRIMARY_HOST", "primary.db.local")
+		// PRIMARY_PORT uses default
+		// REPLICA_HOST and REPLICA_PORT use defaults
+
+		config, err := FromEnvs[Application]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		if config.Name != "ProductionApp" {
+			t.Errorf("Name = %v, want 'ProductionApp'", config.Name)
+		}
+
+		if config.Database.Primary.Host != "primary.db.local" {
+			t.Errorf("Database.Primary.Host = %v, want 'primary.db.local'", config.Database.Primary.Host)
+		}
+
+		if config.Database.Primary.Port != 5432 {
+			t.Errorf("Database.Primary.Port = %v, want 5432 (default)", config.Database.Primary.Port)
+		}
+
+		if config.Database.Replica.Host != "localhost" {
+			t.Errorf("Database.Replica.Host = %v, want 'localhost' (default)", config.Database.Replica.Host)
+		}
+
+		if config.Database.Replica.Port != 5432 {
+			t.Errorf("Database.Replica.Port = %v, want 5432 (default)", config.Database.Replica.Port)
+		}
+	})
+}
+
+// TestDefaultTag_ZeroValues tests that zero values can be set as defaults
+func TestDefaultTag_ZeroValues(t *testing.T) {
+	defer func() {
+		os.Unsetenv("ZERO_INT")
+		os.Unsetenv("ZERO_BOOL")
+		os.Unsetenv("ZERO_FLOAT")
+	}()
+
+	type Config struct {
+		ZeroInt   int     `env:"ZERO_INT" default:"0"`
+		ZeroBool  bool    `env:"ZERO_BOOL" default:"false"`
+		ZeroFloat float64 `env:"ZERO_FLOAT" default:"0.0"`
+	}
+
+	config, err := FromEnvs[Config]()
+	if err != nil {
+		t.Fatalf("FromEnvs failed: %v", err)
+	}
+
+	t.Run("ZeroIntDefault", func(t *testing.T) {
+		if config.ZeroInt != 0 {
+			t.Errorf("ZeroInt = %v, want 0", config.ZeroInt)
+		}
+	})
+
+	t.Run("ZeroBoolDefault", func(t *testing.T) {
+		if config.ZeroBool {
+			t.Errorf("ZeroBool = %v, want false", config.ZeroBool)
+		}
+	})
+
+	t.Run("ZeroFloatDefault", func(t *testing.T) {
+		if config.ZeroFloat != 0.0 {
+			t.Errorf("ZeroFloat = %v, want 0.0", config.ZeroFloat)
+		}
+	})
+}

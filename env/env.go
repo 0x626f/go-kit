@@ -24,7 +24,8 @@ var (
 	// envExt is the file extension for environment variable configuration files
 	envExt = ".env"
 	// tagEnv is the struct tag used to map struct fields to environment variables
-	tagEnv = "env"
+	tagEnv     = "env"
+	tagDefault = "default"
 )
 
 var prefix string
@@ -663,11 +664,18 @@ func mapStructFromEnvs(ref reflect.Value, prefix string) (err error) {
 				continue
 			}
 
+			// Try to get value from environment variable first
 			value, exists := os.LookupEnv(getPrefixedEnv(addNestedPrefix(tag, prefix)))
 
+			// If env var doesn't exist, try to use default tag value
 			if !exists {
-				continue
+				value = field.Tag.Get(tagDefault)
+				// If no default either, skip this field
+				if value == "" {
+					continue
+				}
 			}
+
 			err = errors.Join(err, mapPrimaryValue(fieldRef, value))
 		}
 	}
