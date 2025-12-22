@@ -7,6 +7,8 @@ import (
 	"runtime"
 	"testing"
 	"time"
+
+	"github.com/0x626f/go-kit/logger"
 )
 
 func TestEnvConfig(t *testing.T) {
@@ -1794,6 +1796,615 @@ func TestDefaultTag_ZeroValues(t *testing.T) {
 	t.Run("ZeroFloatDefault", func(t *testing.T) {
 		if config.ZeroFloat != 0.0 {
 			t.Errorf("ZeroFloat = %v, want 0.0", config.ZeroFloat)
+		}
+	})
+}
+
+// TestTimeDuration tests mapping of time.Duration type from environment variables
+func TestTimeDuration(t *testing.T) {
+	defer func() {
+		os.Unsetenv("TIMEOUT")
+		os.Unsetenv("RETRY_DELAY")
+		os.Unsetenv("MAX_DURATION")
+		os.Unsetenv("MIN_DURATION")
+	}()
+
+	type Config struct {
+		Timeout     time.Duration `env:"TIMEOUT" default:"30s"`
+		RetryDelay  time.Duration `env:"RETRY_DELAY" default:"5s"`
+		MaxDuration time.Duration `env:"MAX_DURATION" default:"1h"`
+		MinDuration time.Duration `env:"MIN_DURATION" default:"100ms"`
+	}
+
+	t.Run("UseDefaultDurations", func(t *testing.T) {
+		config, err := FromEnvs[Config]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		if config.Timeout != 30*time.Second {
+			t.Errorf("Timeout = %v, want 30s", config.Timeout)
+		}
+
+		if config.RetryDelay != 5*time.Second {
+			t.Errorf("RetryDelay = %v, want 5s", config.RetryDelay)
+		}
+
+		if config.MaxDuration != 1*time.Hour {
+			t.Errorf("MaxDuration = %v, want 1h", config.MaxDuration)
+		}
+
+		if config.MinDuration != 100*time.Millisecond {
+			t.Errorf("MinDuration = %v, want 100ms", config.MinDuration)
+		}
+	})
+
+	t.Run("EnvOverridesDefaultDurations", func(t *testing.T) {
+		os.Setenv("TIMEOUT", "45s")
+		os.Setenv("RETRY_DELAY", "10s")
+		os.Setenv("MAX_DURATION", "2h30m")
+		os.Setenv("MIN_DURATION", "500ms")
+
+		config, err := FromEnvs[Config]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		if config.Timeout != 45*time.Second {
+			t.Errorf("Timeout = %v, want 45s", config.Timeout)
+		}
+
+		if config.RetryDelay != 10*time.Second {
+			t.Errorf("RetryDelay = %v, want 10s", config.RetryDelay)
+		}
+
+		if config.MaxDuration != 2*time.Hour+30*time.Minute {
+			t.Errorf("MaxDuration = %v, want 2h30m", config.MaxDuration)
+		}
+
+		if config.MinDuration != 500*time.Millisecond {
+			t.Errorf("MinDuration = %v, want 500ms", config.MinDuration)
+		}
+	})
+
+	t.Run("VariousDurationFormats", func(t *testing.T) {
+		testCases := []struct {
+			name     string
+			envValue string
+			expected time.Duration
+		}{
+			{"Nanoseconds", "1000ns", 1000 * time.Nanosecond},
+			{"Microseconds", "500us", 500 * time.Microsecond},
+			{"Milliseconds", "250ms", 250 * time.Millisecond},
+			{"Seconds", "60s", 60 * time.Second},
+			{"Minutes", "5m", 5 * time.Minute},
+			{"Hours", "24h", 24 * time.Hour},
+			{"Complex", "1h30m45s", 1*time.Hour + 30*time.Minute + 45*time.Second},
+			{"MultipleUnits", "2h15m30s500ms", 2*time.Hour + 15*time.Minute + 30*time.Second + 500*time.Millisecond},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				os.Setenv("TIMEOUT", tc.envValue)
+
+				config, err := FromEnvs[Config]()
+				if err != nil {
+					t.Fatalf("FromEnvs failed: %v", err)
+				}
+
+				if config.Timeout != tc.expected {
+					t.Errorf("Timeout = %v, want %v", config.Timeout, tc.expected)
+				}
+			})
+		}
+	})
+
+	t.Run("InvalidDurationFormat", func(t *testing.T) {
+		os.Setenv("TIMEOUT", "invalid-duration")
+
+		_, err := FromEnvs[Config]()
+		if err == nil {
+			t.Error("Expected error for invalid duration format, got nil")
+		}
+	})
+
+	t.Run("ZeroDuration", func(t *testing.T) {
+		os.Setenv("TIMEOUT", "0s")
+
+		config, err := FromEnvs[Config]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		if config.Timeout != 0 {
+			t.Errorf("Timeout = %v, want 0s", config.Timeout)
+		}
+	})
+
+	t.Run("NegativeDuration", func(t *testing.T) {
+		os.Setenv("TIMEOUT", "-10s")
+
+		config, err := FromEnvs[Config]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		if config.Timeout != -10*time.Second {
+			t.Errorf("Timeout = %v, want -10s", config.Timeout)
+		}
+	})
+}
+
+// TestTimeDuration_WithPrefix tests time.Duration with environment variable prefix
+func TestTimeDuration_WithPrefix(t *testing.T) {
+	originalPrefix := GetEnvPrefix()
+	defer func() {
+		SetEnvPrefix(originalPrefix)
+		os.Unsetenv("APP_TIMEOUT")
+		os.Unsetenv("APP_RETRY")
+	}()
+
+	type Config struct {
+		Timeout time.Duration `env:"TIMEOUT" default:"30s"`
+		Retry   time.Duration `env:"RETRY" default:"5s"`
+	}
+
+	t.Run("DefaultWithPrefix", func(t *testing.T) {
+		SetEnvPrefix("APP")
+
+		config, err := FromEnvs[Config]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		if config.Timeout != 30*time.Second {
+			t.Errorf("Timeout = %v, want 30s", config.Timeout)
+		}
+
+		if config.Retry != 5*time.Second {
+			t.Errorf("Retry = %v, want 5s", config.Retry)
+		}
+	})
+
+	t.Run("PrefixedEnvOverrides", func(t *testing.T) {
+		SetEnvPrefix("APP")
+		os.Setenv("APP_TIMEOUT", "1m")
+		os.Setenv("APP_RETRY", "10s")
+
+		config, err := FromEnvs[Config]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		if config.Timeout != 1*time.Minute {
+			t.Errorf("Timeout = %v, want 1m", config.Timeout)
+		}
+
+		if config.Retry != 10*time.Second {
+			t.Errorf("Retry = %v, want 10s", config.Retry)
+		}
+	})
+}
+
+// TestTimeDuration_NestedStructs tests time.Duration in nested structures
+func TestTimeDuration_NestedStructs(t *testing.T) {
+	defer func() {
+		os.Unsetenv("SERVER_TIMEOUT")
+		os.Unsetenv("SERVER_KEEPALIVE")
+		os.Unsetenv("DB_TIMEOUT")
+		os.Unsetenv("DB_RETRY")
+	}()
+
+	type ServerConfig struct {
+		Timeout   time.Duration `env:"TIMEOUT" default:"30s"`
+		KeepAlive time.Duration `env:"KEEPALIVE" default:"60s"`
+	}
+
+	type DatabaseConfig struct {
+		Timeout time.Duration `env:"TIMEOUT" default:"10s"`
+		Retry   time.Duration `env:"RETRY" default:"5s"`
+	}
+
+	type Config struct {
+		Server   ServerConfig   `env:"SERVER"`
+		Database DatabaseConfig `env:"DB"`
+	}
+
+	t.Run("NestedDefaults", func(t *testing.T) {
+		config, err := FromEnvs[Config]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		if config.Server.Timeout != 30*time.Second {
+			t.Errorf("Server.Timeout = %v, want 30s", config.Server.Timeout)
+		}
+
+		if config.Server.KeepAlive != 60*time.Second {
+			t.Errorf("Server.KeepAlive = %v, want 60s", config.Server.KeepAlive)
+		}
+
+		if config.Database.Timeout != 10*time.Second {
+			t.Errorf("Database.Timeout = %v, want 10s", config.Database.Timeout)
+		}
+
+		if config.Database.Retry != 5*time.Second {
+			t.Errorf("Database.Retry = %v, want 5s", config.Database.Retry)
+		}
+	})
+
+	t.Run("NestedEnvOverrides", func(t *testing.T) {
+		os.Setenv("SERVER_TIMEOUT", "45s")
+		os.Setenv("SERVER_KEEPALIVE", "90s")
+		os.Setenv("DB_TIMEOUT", "20s")
+		os.Setenv("DB_RETRY", "10s")
+
+		config, err := FromEnvs[Config]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		if config.Server.Timeout != 45*time.Second {
+			t.Errorf("Server.Timeout = %v, want 45s", config.Server.Timeout)
+		}
+
+		if config.Server.KeepAlive != 90*time.Second {
+			t.Errorf("Server.KeepAlive = %v, want 90s", config.Server.KeepAlive)
+		}
+
+		if config.Database.Timeout != 20*time.Second {
+			t.Errorf("Database.Timeout = %v, want 20s", config.Database.Timeout)
+		}
+
+		if config.Database.Retry != 10*time.Second {
+			t.Errorf("Database.Retry = %v, want 10s", config.Database.Retry)
+		}
+	})
+}
+
+// TestLogLevel tests mapping of custom LogLevel enum type
+func TestLogLevel(t *testing.T) {
+	defer func() {
+		os.Unsetenv("LOG_LEVEL")
+		os.Unsetenv("MIN_LOG_LEVEL")
+	}()
+
+	type Config struct {
+		LogLevel    logger.LogLevel `env:"LOG_LEVEL" default:"info"`
+		MinLogLevel logger.LogLevel `env:"MIN_LOG_LEVEL" default:"warning"`
+	}
+
+	t.Run("UseDefaultLogLevel", func(t *testing.T) {
+		config, err := FromEnvs[Config]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		if config.LogLevel != logger.INFO {
+			t.Errorf("LogLevel = %v, want 'info'", config.LogLevel)
+		}
+
+		if config.MinLogLevel != logger.WARNING {
+			t.Errorf("MinLogLevel = %v, want 'warn'", config.MinLogLevel)
+		}
+	})
+
+	t.Run("EnvOverridesDefaultLogLevel", func(t *testing.T) {
+		os.Setenv("LOG_LEVEL", "debug")
+		os.Setenv("MIN_LOG_LEVEL", "error")
+
+		config, err := FromEnvs[Config]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		if config.LogLevel != logger.DEBUG {
+			t.Errorf("LogLevel = %v, want 'debug'", config.LogLevel)
+		}
+
+		if config.MinLogLevel != logger.ERROR {
+			t.Errorf("MinLogLevel = %v, want 'error'", config.MinLogLevel)
+		}
+	})
+
+	t.Run("AllValidLogLevels", func(t *testing.T) {
+		validLevels := map[string]logger.LogLevel{
+			"debug":   logger.DEBUG,
+			"info":    logger.INFO,
+			"warning": logger.WARNING,
+			"error":   logger.ERROR,
+		}
+
+		for envValue, expected := range validLevels {
+			t.Run(envValue, func(t *testing.T) {
+				os.Setenv("LOG_LEVEL", envValue)
+
+				config, err := FromEnvs[Config]()
+				if err != nil {
+					t.Fatalf("FromEnvs failed for %s: %v", envValue, err)
+				}
+
+				if config.LogLevel != expected {
+					t.Errorf("LogLevel = %v, want %v", config.LogLevel, expected)
+				}
+			})
+		}
+	})
+
+	t.Run("CaseInsensitiveLogLevel", func(t *testing.T) {
+		testCases := []struct {
+			input    string
+			expected logger.LogLevel
+		}{
+			{"DEBUG", logger.DEBUG},
+			{"Info", logger.INFO},
+			{"WARNING", logger.WARNING},
+			{"Error", logger.ERROR},
+			{"DeBuG", logger.DEBUG},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.input, func(t *testing.T) {
+				os.Setenv("LOG_LEVEL", tc.input)
+
+				config, err := FromEnvs[Config]()
+				if err != nil {
+					t.Fatalf("FromEnvs failed for %s: %v", tc.input, err)
+				}
+
+				if config.LogLevel != tc.expected {
+					t.Errorf("LogLevel = %v, want %v", config.LogLevel, tc.expected)
+				}
+			})
+		}
+	})
+
+	t.Run("InvalidLogLevel", func(t *testing.T) {
+		os.Setenv("LOG_LEVEL", "invalid")
+
+		config, err := FromEnvs[Config]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed for LOG_LEVEL: %v", err)
+		}
+
+		if config.LogLevel != logger.NONE {
+			t.Errorf("Expected None' log level, got: %v", err)
+		}
+	})
+
+	t.Run("EmptyLogLevel", func(t *testing.T) {
+		os.Setenv("LOG_LEVEL", "")
+
+		config, err := FromEnvs[Config]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed for LOG_LEVEL: %v", err)
+		}
+
+		if config.LogLevel != logger.NONE {
+			t.Errorf("Expected None' log level, got: %v", err)
+		}
+	})
+}
+
+// TestLogLevel_WithPrefix tests LogLevel with environment variable prefix
+func TestLogLevel_WithPrefix(t *testing.T) {
+	originalPrefix := GetEnvPrefix()
+	defer func() {
+		SetEnvPrefix(originalPrefix)
+		os.Unsetenv("APP_LOG_LEVEL")
+		os.Unsetenv("APP_MIN_LEVEL")
+	}()
+
+	type Config struct {
+		LogLevel logger.LogLevel `env:"LOG_LEVEL" default:"info"`
+		MinLevel logger.LogLevel `env:"MIN_LEVEL" default:"warning"`
+	}
+
+	t.Run("DefaultWithPrefix", func(t *testing.T) {
+		SetEnvPrefix("APP")
+
+		config, err := FromEnvs[Config]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		if config.LogLevel != logger.INFO {
+			t.Errorf("LogLevel = %v, want 'info'", config.LogLevel)
+		}
+
+		if config.MinLevel != logger.WARNING {
+			t.Errorf("MinLevel = %v, want 'warn'", config.MinLevel)
+		}
+	})
+
+	t.Run("PrefixedEnvOverrides", func(t *testing.T) {
+		SetEnvPrefix("APP")
+		os.Setenv("APP_LOG_LEVEL", "debug")
+		os.Setenv("APP_MIN_LEVEL", "error")
+
+		config, err := FromEnvs[Config]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		if config.LogLevel != logger.DEBUG {
+			t.Errorf("LogLevel = %v, want 'debug'", config.LogLevel)
+		}
+
+		if config.MinLevel != logger.ERROR {
+			t.Errorf("MinLevel = %v, want 'error'", config.MinLevel)
+		}
+	})
+}
+
+// TestLogLevel_NestedStructs tests LogLevel in nested structures
+func TestLogLevel_NestedStructs(t *testing.T) {
+	defer func() {
+		os.Unsetenv("APP_LEVEL")
+		os.Unsetenv("SERVER_LEVEL")
+		os.Unsetenv("DB_LEVEL")
+	}()
+
+	type ServerConfig struct {
+		Level logger.LogLevel `env:"LEVEL" default:"info"`
+	}
+
+	type DatabaseConfig struct {
+		Level logger.LogLevel `env:"LEVEL" default:"warning"`
+	}
+
+	type Config struct {
+		AppLevel logger.LogLevel `env:"APP_LEVEL" default:"debug"`
+		Server   ServerConfig    `env:"SERVER"`
+		Database DatabaseConfig  `env:"DB"`
+	}
+
+	t.Run("NestedDefaults", func(t *testing.T) {
+		config, err := FromEnvs[Config]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		if config.AppLevel != logger.DEBUG {
+			t.Errorf("AppLevel = %v, want 'debug'", config.AppLevel)
+		}
+
+		if config.Server.Level != logger.INFO {
+			t.Errorf("Server.Level = %v, want 'info'", config.Server.Level)
+		}
+
+		if config.Database.Level != logger.WARNING {
+			t.Errorf("Database.Level = %v, want 'warn'", config.Database.Level)
+		}
+	})
+
+	t.Run("NestedEnvOverrides", func(t *testing.T) {
+		os.Setenv("APP_LEVEL", "error")
+		os.Setenv("SERVER_LEVEL", "debug")
+		os.Setenv("DB_LEVEL", "info")
+
+		config, err := FromEnvs[Config]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		if config.AppLevel != logger.ERROR {
+			t.Errorf("AppLevel = %v, want 'error'", config.AppLevel)
+		}
+
+		if config.Server.Level != logger.DEBUG {
+			t.Errorf("Server.Level = %v, want 'debug'", config.Server.Level)
+		}
+
+		if config.Database.Level != logger.INFO {
+			t.Errorf("Database.Level = %v, want 'info'", config.Database.Level)
+		}
+	})
+}
+
+// TestMixedCustomTypes tests configuration with both time.Duration and LogLevel
+func TestMixedCustomTypes(t *testing.T) {
+	defer func() {
+		os.Unsetenv("LOG_LEVEL")
+		os.Unsetenv("TIMEOUT")
+		os.Unsetenv("RETRY_DELAY")
+		os.Unsetenv("MIN_LEVEL")
+	}()
+
+	type Config struct {
+		LogLevel   logger.LogLevel `env:"LOG_LEVEL" default:"info"`
+		Timeout    time.Duration   `env:"TIMEOUT" default:"30s"`
+		RetryDelay time.Duration   `env:"RETRY_DELAY" default:"5s"`
+		MinLevel   logger.LogLevel `env:"MIN_LEVEL" default:"warning"`
+	}
+
+	t.Run("MixedDefaults", func(t *testing.T) {
+		config, err := FromEnvs[Config]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		if config.LogLevel != logger.INFO {
+			t.Errorf("LogLevel = %v, want 'info'", config.LogLevel)
+		}
+
+		if config.Timeout != 30*time.Second {
+			t.Errorf("Timeout = %v, want 30s", config.Timeout)
+		}
+
+		if config.RetryDelay != 5*time.Second {
+			t.Errorf("RetryDelay = %v, want 5s", config.RetryDelay)
+		}
+
+		if config.MinLevel != logger.WARNING {
+			t.Errorf("MinLevel = %v, want 'warn'", config.MinLevel)
+		}
+	})
+
+	t.Run("MixedEnvOverrides", func(t *testing.T) {
+		os.Setenv("LOG_LEVEL", "debug")
+		os.Setenv("TIMEOUT", "1m")
+		os.Setenv("RETRY_DELAY", "10s")
+		os.Setenv("MIN_LEVEL", "error")
+
+		config, err := FromEnvs[Config]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		if config.LogLevel != logger.DEBUG {
+			t.Errorf("LogLevel = %v, want 'debug'", config.LogLevel)
+		}
+
+		if config.Timeout != 1*time.Minute {
+			t.Errorf("Timeout = %v, want 1m", config.Timeout)
+		}
+
+		if config.RetryDelay != 10*time.Second {
+			t.Errorf("RetryDelay = %v, want 10s", config.RetryDelay)
+		}
+
+		if config.MinLevel != logger.ERROR {
+			t.Errorf("MinLevel = %v, want 'error'", config.MinLevel)
+		}
+
+		// Clean up for next subtest
+		os.Unsetenv("LOG_LEVEL")
+		os.Unsetenv("TIMEOUT")
+		os.Unsetenv("RETRY_DELAY")
+		os.Unsetenv("MIN_LEVEL")
+	})
+
+	t.Run("PartialEnvOverride", func(t *testing.T) {
+		// Clean up first
+		os.Unsetenv("LOG_LEVEL")
+		os.Unsetenv("TIMEOUT")
+		os.Unsetenv("RETRY_DELAY")
+		os.Unsetenv("MIN_LEVEL")
+
+		os.Setenv("LOG_LEVEL", "warning")
+		os.Setenv("TIMEOUT", "45s")
+		// RETRY_DELAY and MIN_LEVEL use defaults
+
+		config, err := FromEnvs[Config]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		if config.LogLevel != logger.WARNING {
+			t.Errorf("LogLevel = %v, want 'warn'", config.LogLevel)
+		}
+
+		if config.Timeout != 45*time.Second {
+			t.Errorf("Timeout = %v, want 45s", config.Timeout)
+		}
+
+		if config.RetryDelay != 5*time.Second {
+			t.Errorf("RetryDelay = %v, want 5s (default)", config.RetryDelay)
+		}
+
+		if config.MinLevel != logger.WARNING {
+			t.Errorf("MinLevel = %v, want 'warn' (default)", config.MinLevel)
 		}
 	})
 }

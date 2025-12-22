@@ -5,6 +5,7 @@ package env
 
 import (
 	"bufio"
+	"encoding"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -494,8 +495,27 @@ func mapEnvConfig[T any](filename string) (*T, error) {
 // Returns:
 //   - error: An error if conversion fails or if the type is unsupported
 func mapPrimaryValue(ref reflect.Value, value string) error {
-	var aggError error
+	refType := ref.Type()
+	if utils.IsInstanceOf[time.Duration](refType) {
+		dur, err := time.ParseDuration(value)
+		if err != nil {
+			return err
+		}
+		ref.SetInt(int64(dur))
+		return nil
+	}
 
+	if utils.Implements[encoding.TextUnmarshaler](refType) {
+		ptr := ref.Addr()
+		m := ptr.MethodByName("UnmarshalText")
+		result := m.Call([]reflect.Value{reflect.ValueOf([]byte(value))})
+		if !result[0].IsNil() {
+			ref.Set(result[0].Elem())
+		}
+		return nil
+	}
+
+	var aggError error
 	switch ref.Kind() {
 	case reflect.String:
 		ref.SetString(value)
@@ -566,7 +586,7 @@ func mapPrimaryValue(ref reflect.Value, value string) error {
 		}
 		ref.SetFloat(num)
 	case reflect.Slice:
-		elemType := ref.Type().Elem()
+		elemType := refType.Elem()
 
 		if elemType.Kind() == reflect.Slice || elemType.Kind() == reflect.Array {
 			ref.SetZero()
@@ -583,9 +603,7 @@ func mapPrimaryValue(ref reflect.Value, value string) error {
 				aggError = errors.Join(aggError, err)
 			}
 		}
-
 		ref.Set(slice)
-
 	default:
 		ref.SetZero()
 	}

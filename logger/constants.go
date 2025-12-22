@@ -64,8 +64,8 @@ var (
 //
 //	level := logger.INFO
 //	fmt.Println(level.String()) // Output: "INFO"
-func (level LogLevel) String() string {
-	switch level {
+func (level *LogLevel) String() string {
+	switch *level {
 	case ERROR:
 		return "ERROR"
 	case WARNING:
@@ -113,14 +113,19 @@ func ParseLogLevel(level string) LogLevel {
 	}
 }
 
+func (level *LogLevel) UnmarshalText(text []byte) error {
+	*level = ParseLogLevel(string(text))
+	return nil
+}
+
 // color returns the ANSI color code for this log level.
 // Used internally when coloring is enabled.
 //
 // Returns:
 //   - The ANSI color escape sequence for this level
 //   - Empty byte slice for NONE or unrecognized levels
-func (level LogLevel) color() color {
-	switch level {
+func (level *LogLevel) color() color {
+	switch *level {
 	case ERROR:
 		return colorRed
 	case WARNING:
@@ -149,6 +154,6 @@ func (level LogLevel) color() color {
 //
 //	Input:  []byte("Error message")
 //	Output: [ESC[31m]Error message[ESC[0m]  (displays in red)
-func (level LogLevel) paint(payload []byte) []byte {
+func (level *LogLevel) paint(payload []byte) []byte {
 	return append(append(level.color(), payload...), colorReset...)
 }

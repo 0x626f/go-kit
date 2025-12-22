@@ -3,7 +3,9 @@
 // container operations to simplify Go code using generics.
 package utils
 
-import "reflect"
+import (
+	"reflect"
+)
 
 // NewInstanceOf creates a new zero-initialized instance of type T and returns a pointer to it.
 // This function uses reflection to dynamically create an instance of any type provided as a
@@ -148,4 +150,12 @@ func MapToValueSlice[K comparable, V any](m map[K]V) []V {
 		slice = append(slice, value)
 	}
 	return slice
+}
+
+func Implements[T any](t reflect.Type) bool {
+	return reflect.PointerTo(t).Implements(reflect.TypeOf((*T)(nil)).Elem())
+}
+
+func IsInstanceOf[T any](t reflect.Type) bool {
+	return t == reflect.TypeOf(Zero[T]())
 }
