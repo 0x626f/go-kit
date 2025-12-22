@@ -21,6 +21,61 @@ func TestNewLogger(t *testing.T) {
 	}
 }
 
+// TestNewLogger_WithCustomConfig tests NewLogger with a complete custom configuration.
+// It verifies that all config fields are properly inherited from defaultConfig.
+func TestNewLogger_WithCustomConfig(t *testing.T) {
+	// Save original config
+	originalConfig := defaultConfig
+	defer func() { defaultConfig = originalConfig }()
+
+	// Create and set a complete custom config
+	customConfig := &Config{
+		Level:           TRACE,
+		Timestamp:       true,
+		TimestampFormat: "2006/01/02 15:04:05.000",
+		Coloring:        false,
+		Async:           false,
+		AsyncBuffer:     200,
+	}
+
+	// Create new logger
+	logger := NewLogger("complete-config-test", customConfig)
+
+	// Verify all config fields
+	if logger.options.Level != TRACE {
+		t.Errorf("Expected level TRACE, got %v", logger.options.Level)
+	}
+	if !logger.options.Timestamp {
+		t.Error("Expected timestamp enabled")
+	}
+	if logger.options.TimestampFormat != "2006/01/02 15:04:05.000" {
+		t.Errorf("Expected custom timestamp format, got '%s'", logger.options.TimestampFormat)
+	}
+	if logger.options.Coloring {
+		t.Error("Expected coloring disabled")
+	}
+	if logger.options.Async {
+		t.Error("Expected async disabled")
+	}
+	if logger.options.AsyncBuffer != 200 {
+		t.Errorf("Expected async buffer 200, got %d", logger.options.AsyncBuffer)
+	}
+
+	// Verify logger works with all TRACE level
+	var buf bytes.Buffer
+	logger.OutputTo(&buf)
+
+	logger.Tracef("trace test")
+	output := buf.String()
+
+	if !strings.Contains(output, "TRACE") {
+		t.Error("Expected TRACE level in output")
+	}
+	if !strings.Contains(output, "trace test") {
+		t.Error("Expected trace message in output")
+	}
+}
+
 // TestUseLoggerRegistry tests the WithLoggerRegistry function.
 // It verifies that the global logger registry is properly initialized.
 func TestUseLoggerRegistry(t *testing.T) {

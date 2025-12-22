@@ -136,11 +136,16 @@ type jsonLog struct {
 //	logger.WithLoggerRegistry()
 //	apiLogger := logger.NewLogger("api")
 //	sameLogger := logger.NewLogger("api") // Returns apiLogger
-func NewLogger(name string) *Logger {
+func NewLogger(name string, config ...*Config) *Logger {
 	if loggerRegistry != nil {
 		if logger, exists := loggerRegistry[name]; exists {
 			return logger
 		}
+	}
+
+	localConfig := defaultConfig
+	if len(config) > 0 {
+		localConfig = config[0]
 	}
 
 	logger := &Logger{
@@ -148,12 +153,12 @@ func NewLogger(name string) *Logger {
 		out:  os.Stdout,
 		err:  os.Stderr,
 		options: &Config{
-			Level:           defaultConfig.Level,
-			Coloring:        defaultConfig.Coloring,
-			Timestamp:       defaultConfig.Timestamp,
-			TimestampFormat: defaultConfig.TimestampFormat,
-			Async:           defaultConfig.Async,
-			AsyncBuffer:     defaultConfig.AsyncBuffer,
+			Level:           localConfig.Level,
+			Coloring:        localConfig.Coloring,
+			Timestamp:       localConfig.Timestamp,
+			TimestampFormat: localConfig.TimestampFormat,
+			Async:           localConfig.Async,
+			AsyncBuffer:     localConfig.AsyncBuffer,
 		},
 	}
 
