@@ -36,7 +36,7 @@ var builderPool = &sync.Pool{
 // Output JSON:
 //
 //	{
-//	  "level": "INFO",
+//	  "Level": "INFO",
 //	  "message": "HTTP request",
 //	  "object": {
 //	    "method": "GET",
@@ -59,7 +59,7 @@ type ObjectLogBuilder struct {
 //
 // Parameters:
 //   - logger: The Logger instance that will emit this log
-//   - level: The log level for this entry
+//   - Level: The log Level for this entry
 //   - msg: The log message bytes (already formatted)
 //
 // Returns:
@@ -71,12 +71,12 @@ func newObjectLogBuilder(logger *Logger, level LogLevel, msg []byte) *ObjectLogB
 
 	instance.json.AppendObjectStart()
 
-	// insert log level
-	instance.json.AppendKey("level").AppendString(level.String()).AppendDelimiter()
-	// insert timestamp
-	if instance.logger.options.timestamp {
-		timestamp := time.Now().Format(logger.options.timestampFormat)
-		instance.json.AppendKey("timestamp").AppendString(timestamp).AppendDelimiter()
+	// insert log Level
+	instance.json.AppendKey("Level").AppendString(level.String()).AppendDelimiter()
+	// insert Timestamp
+	if instance.logger.options.Timestamp {
+		timestamp := time.Now().Format(logger.options.TimestampFormat)
+		instance.json.AppendKey("Timestamp").AppendString(timestamp).AppendDelimiter()
 	}
 
 	// insert a source of the log
@@ -106,7 +106,7 @@ func newObjectLogBuilder(logger *Logger, level LogLevel, msg []byte) *ObjectLogB
 func (builder *ObjectLogBuilder) Build() {
 	builder.json.AppendObjectEnd().AppendObjectEnd().AppendNewLine()
 
-	if builder.logger.options.async {
+	if builder.logger.options.Async {
 		builder.logger.sendToChannelByLevel(builder.level, builder.json.Data())
 	} else {
 		builder.logger.writeByLevel(builder.level, builder.json.Data())

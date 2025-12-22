@@ -6,7 +6,7 @@ import "strings"
 // Lower numeric values indicate higher severity.
 // Levels in order from highest to lowest severity: ERROR < WARNING < INFO < DEBUG < TRACE < NONE
 //
-// When a logger's level is set to a particular value, only messages at that level or higher severity are logged.
+// When a logger's Level is set to a particular value, only messages at that Level or higher severity are logged.
 // For example, if set to INFO, ERROR and WARNING messages are also logged, but DEBUG and TRACE are discarded.
 type LogLevel uint8
 
@@ -24,10 +24,10 @@ const (
 	INFO
 	// DEBUG indicates detailed information useful for development and troubleshooting.
 	DEBUG
-	// TRACE indicates the most verbose level of diagnostic information.
+	// TRACE indicates the most verbose Level of diagnostic information.
 	TRACE
-	// NONE indicates no log level filtering - all messages are logged.
-	// This is also used for messages that don't have an explicit level.
+	// NONE indicates no log Level filtering - all messages are logged.
+	// This is also used for messages that don't have an explicit Level.
 	NONE
 
 	// space is the ASCII space character used as a delimiter in log formatting
@@ -42,19 +42,19 @@ var (
 
 	// colorReset restores the terminal to default colors
 	colorReset color = []byte{27, 91, 48, 109}
-	// colorRed is used for ERROR level messages
+	// colorRed is used for ERROR Level messages
 	colorRed color = []byte{27, 91, 51, 49, 109}
-	// colorGreen is used for INFO level messages
+	// colorGreen is used for INFO Level messages
 	colorGreen color = []byte{27, 91, 51, 50, 109}
-	// colorYellow is used for WARNING level messages
+	// colorYellow is used for WARNING Level messages
 	colorYellow color = []byte{27, 91, 51, 51, 109}
-	// colorBlue is used for TRACE level messages
+	// colorBlue is used for TRACE Level messages
 	colorBlue color = []byte{27, 91, 51, 52, 109}
-	// colorGrey is used for DEBUG level messages
+	// colorGrey is used for DEBUG Level messages
 	colorGrey color = []byte{27, 91, 57, 48, 109}
 )
 
-// String returns the string representation of the log level.
+// String returns the string representation of the log Level.
 //
 // Returns:
 //   - "ERROR", "WARNING", "INFO", "DEBUG", or "TRACE" for known levels
@@ -62,8 +62,8 @@ var (
 //
 // Example:
 //
-//	level := logger.INFO
-//	fmt.Println(level.String()) // Output: "INFO"
+//	Level := logger.INFO
+//	fmt.Println(Level.String()) // Output: "INFO"
 func (level *LogLevel) String() string {
 	switch *level {
 	case ERROR:
@@ -85,7 +85,7 @@ func (level *LogLevel) String() string {
 // The comparison is case-insensitive, so "error", "ERROR", and "Error" all return ERROR.
 //
 // Parameters:
-//   - level: A string representation of the log level
+//   - Level: A string representation of the log Level
 //
 // Returns:
 //   - The corresponding LogLevel constant
@@ -93,9 +93,9 @@ func (level *LogLevel) String() string {
 //
 // Example:
 //
-//	level := logger.ParseLogLevel("info")    // Returns INFO
-//	level := logger.ParseLogLevel("ERROR")   // Returns ERROR
-//	level := logger.ParseLogLevel("invalid") // Returns NONE
+//	Level := logger.ParseLogLevel("info")    // Returns INFO
+//	Level := logger.ParseLogLevel("ERROR")   // Returns ERROR
+//	Level := logger.ParseLogLevel("invalid") // Returns NONE
 func ParseLogLevel(level string) LogLevel {
 	switch {
 	case strings.EqualFold(level, "ERROR"):
@@ -118,11 +118,11 @@ func (level *LogLevel) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// color returns the ANSI color code for this log level.
-// Used internally when coloring is enabled.
+// color returns the ANSI color code for this log Level.
+// Used internally when Coloring is enabled.
 //
 // Returns:
-//   - The ANSI color escape sequence for this level
+//   - The ANSI color escape sequence for this Level
 //   - Empty byte slice for NONE or unrecognized levels
 func (level *LogLevel) color() color {
 	switch *level {
@@ -141,8 +141,8 @@ func (level *LogLevel) color() color {
 	}
 }
 
-// paint wraps the payload with ANSI color codes for this log level.
-// The payload is prefixed with the level's color and suffixed with a reset code.
+// paint wraps the payload with ANSI color codes for this log Level.
+// The payload is prefixed with the Level's color and suffixed with a reset code.
 //
 // Parameters:
 //   - payload: The log message bytes to colorize
@@ -150,7 +150,7 @@ func (level *LogLevel) color() color {
 // Returns:
 //   - The payload wrapped in ANSI color escape sequences
 //
-// Example output for ERROR level:
+// Example output for ERROR Level:
 //
 //	Input:  []byte("Error message")
 //	Output: [ESC[31m]Error message[ESC[0m]  (displays in red)

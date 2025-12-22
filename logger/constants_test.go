@@ -4,7 +4,8 @@ import (
 	"testing"
 )
 
-// Test LogLevel String method
+// TestLogLevel_String tests the String method of LogLevel type.
+// It verifies that each log level returns the correct string representation.
 func TestLogLevel_String(t *testing.T) {
 	tests := []struct {
 		level    LogLevel
@@ -28,7 +29,8 @@ func TestLogLevel_String(t *testing.T) {
 	}
 }
 
-// Test LogLevel color method
+// TestLogLevel_color tests the color method of LogLevel type.
+// It verifies that each log level returns the correct ANSI color code.
 func TestLogLevel_color(t *testing.T) {
 	tests := []struct {
 		level    LogLevel
@@ -60,7 +62,8 @@ func TestLogLevel_color(t *testing.T) {
 	}
 }
 
-// Test LogLevel paint method
+// TestLogLevel_paint tests the paint method of LogLevel type.
+// It verifies that log messages are correctly wrapped with ANSI color codes.
 func TestLogLevel_paint(t *testing.T) {
 	payload := []byte("test message")
 
@@ -87,11 +90,11 @@ func TestLogLevel_paint(t *testing.T) {
 				t.Errorf("Expected painted length %d, got %d", expectedLen, len(result))
 			}
 
-			// If the level has a color, should start with it
+			// If the Level has a color, should start with it
 			if len(levelColor) > 0 {
 				for i := range levelColor {
 					if result[i] != levelColor[i] {
-						t.Errorf("Paint should start with level color")
+						t.Errorf("Paint should start with Level color")
 						break
 					}
 				}
@@ -109,7 +112,8 @@ func TestLogLevel_paint(t *testing.T) {
 	}
 }
 
-// Test color constants
+// TestColorConstants tests that all ANSI color constant values are properly defined.
+// It ensures none of the color escape sequences are empty (except where expected).
 func TestColorConstants(t *testing.T) {
 	// Verify color constants are not empty (except for edge cases)
 	if len(colorReset) == 0 {
@@ -132,7 +136,8 @@ func TestColorConstants(t *testing.T) {
 	}
 }
 
-// Test LogLevel ordering
+// TestLogLevel_Ordering tests that log levels are ordered correctly by severity.
+// Lower numeric values should represent higher severity (ERROR < WARNING < INFO < DEBUG < TRACE < NONE).
 func TestLogLevel_Ordering(t *testing.T) {
 	// Verify log levels are in correct order
 	if ERROR >= WARNING {
@@ -152,7 +157,8 @@ func TestLogLevel_Ordering(t *testing.T) {
 	}
 }
 
-// Test constant values
+// TestConstants tests that package-level constants (space, ln) have correct values.
+// These constants are used internally for formatting log messages.
 func TestConstants(t *testing.T) {
 	if space != byte(' ') {
 		t.Errorf("Expected space to be ' ', got %v", space)
@@ -162,7 +168,8 @@ func TestConstants(t *testing.T) {
 	}
 }
 
-// Test ParseLogLevel function
+// TestParseLogLevel tests the ParseLogLevel function with various inputs.
+// It verifies case-insensitive parsing and proper handling of invalid inputs.
 func TestParseLogLevel(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -184,7 +191,7 @@ func TestParseLogLevel(t *testing.T) {
 		{"Uppercase TRACE", "TRACE", TRACE},
 		{"Lowercase trace", "trace", TRACE},
 		{"Mixed case Trace", "Trace", TRACE},
-		{"Invalid level", "invalid", NONE},
+		{"Invalid Level", "invalid", NONE},
 		{"Empty string", "", NONE},
 		{"Random string", "xyz123", NONE},
 	}
@@ -194,6 +201,66 @@ func TestParseLogLevel(t *testing.T) {
 			result := ParseLogLevel(tt.input)
 			if result != tt.expected {
 				t.Errorf("ParseLogLevel(%q) = %v, expected %v", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestLogLevel_UnmarshalText tests the UnmarshalText implementation for LogLevel.
+// This is used for parsing log levels from environment variables and configuration files.
+func TestLogLevel_UnmarshalText(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []byte
+		expected LogLevel
+	}{
+		{"Uppercase ERROR", []byte("ERROR"), ERROR},
+		{"Lowercase error", []byte("error"), ERROR},
+		{"Mixed case Error", []byte("Error"), ERROR},
+		{"Uppercase WARNING", []byte("WARNING"), WARNING},
+		{"Lowercase warning", []byte("warning"), WARNING},
+		{"Mixed case Warning", []byte("Warning"), WARNING},
+		{"Uppercase INFO", []byte("INFO"), INFO},
+		{"Lowercase info", []byte("info"), INFO},
+		{"Mixed case Info", []byte("Info"), INFO},
+		{"Uppercase DEBUG", []byte("DEBUG"), DEBUG},
+		{"Lowercase debug", []byte("debug"), DEBUG},
+		{"Mixed case Debug", []byte("Debug"), DEBUG},
+		{"Uppercase TRACE", []byte("TRACE"), TRACE},
+		{"Lowercase trace", []byte("trace"), TRACE},
+		{"Mixed case Trace", []byte("Trace"), TRACE},
+		{"Invalid Level", []byte("invalid"), NONE},
+		{"Empty bytes", []byte(""), NONE},
+		{"Random bytes", []byte("xyz123"), NONE},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var level LogLevel
+			err := level.UnmarshalText(tt.input)
+			if err != nil {
+				t.Errorf("UnmarshalText(%q) returned error: %v", tt.input, err)
+			}
+			if level != tt.expected {
+				t.Errorf("UnmarshalText(%q) = %v, expected %v", tt.input, level, tt.expected)
+			}
+		})
+	}
+}
+
+// TestLogLevel_UnmarshalText_AllLevels verifies that all valid log levels can be unmarshaled correctly.
+func TestLogLevel_UnmarshalText_AllLevels(t *testing.T) {
+	levels := []LogLevel{ERROR, WARNING, INFO, DEBUG, TRACE}
+
+	for _, expectedLevel := range levels {
+		t.Run(expectedLevel.String(), func(t *testing.T) {
+			var level LogLevel
+			err := level.UnmarshalText([]byte(expectedLevel.String()))
+			if err != nil {
+				t.Errorf("UnmarshalText failed for %s: %v", expectedLevel.String(), err)
+			}
+			if level != expectedLevel {
+				t.Errorf("Expected level %v, got %v", expectedLevel, level)
 			}
 		})
 	}

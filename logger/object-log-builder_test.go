@@ -91,7 +91,7 @@ func BenchmarkObjectLogBuilder_AssignInt64(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		logger.InfoObjectf("test message").
-			AssignInt64("timestamp", 1638720000000).
+			AssignInt64("Timestamp", 1638720000000).
 			AssignInt64("userId", 987654321).
 			Build()
 	}
@@ -172,7 +172,7 @@ func BenchmarkObjectLogBuilder_Mixed(b *testing.B) {
 			AssignInt("id", 12345).
 			AssignBool("admin", true).
 			AssignFloat64("balance", 1234.56).
-			AssignInt64("timestamp", 1638720000000).
+			AssignInt64("Timestamp", 1638720000000).
 			Build()
 	}
 }
@@ -258,7 +258,7 @@ func TestNewObjectLogBuilder(t *testing.T) {
 		t.Error("Builder logger reference is incorrect")
 	}
 	if builder.level != INFO {
-		t.Error("Builder level is incorrect")
+		t.Error("Builder Level is incorrect")
 	}
 }
 
@@ -809,7 +809,7 @@ func TestObjectLogBuilder_ComplexNested(t *testing.T) {
 
 	output := buf.String()
 	if !strings.Contains(output, `"topLevel":"value"`) {
-		t.Error("Missing top level field")
+		t.Error("Missing top Level field")
 	}
 	if !strings.Contains(output, `"level1":{`) {
 		t.Error("Missing level1 nested object")
@@ -848,8 +848,8 @@ func TestObjectLogBuilder_AllLogLevels(t *testing.T) {
 				builder.AssignString("key", "value").Build()
 
 				output := buf.String()
-				if tt.expected != "" && !strings.Contains(output, `"level":"`+tt.expected+`"`) {
-					t.Errorf("Expected level %s in output, got: %s", tt.expected, output)
+				if tt.expected != "" && !strings.Contains(output, `"Level":"`+tt.expected+`"`) {
+					t.Errorf("Expected Level %s in output, got: %s", tt.expected, output)
 				}
 			}
 		})
