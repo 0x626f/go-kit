@@ -119,6 +119,36 @@ func GetEnv(name, fallback string) string {
 	return fallback
 }
 
+// SetEnv sets an environment variable in the current process.
+// This is a convenience wrapper around os.Setenv that provides a consistent
+// API for setting environment variables programmatically.
+//
+// The environment variable will be set for the current process and will be
+// available to all subsequent operations, including child processes spawned
+// after the variable is set.
+//
+// Parameters:
+//   - name: The name of the environment variable to set
+//   - value: The value to assign to the environment variable
+//
+// Returns:
+//   - error: An error if the environment variable cannot be set (rare, usually OS-level restrictions)
+//
+// Example:
+//
+//	// Set a configuration value
+//	err := config.SetEnv("DATABASE_URL", "postgres://localhost/mydb")
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//
+//	// Set multiple environment variables
+//	config.SetEnv("APP_ENV", "production")
+//	config.SetEnv("LOG_LEVEL", "info")
+func SetEnv(name, value string) error {
+	return os.Setenv(addNestedPrefix(name, prefix), value)
+}
+
 // canConvertFromEnv checks if a reflect.Kind can be converted from a string environment variable value.
 // This function supports primitive types and slices as convertible types.
 //
