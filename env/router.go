@@ -2,6 +2,10 @@ package env
 
 import "strings"
 
+const (
+	defaultKey = "DEFAULT"
+)
+
 // Router provides a fluent API for conditional value resolution based on
 // environment variable values. It allows you to define different values
 // for different environment configurations (e.g., development, staging, production).
@@ -60,7 +64,7 @@ func RouterOn(variable string) *Router {
 //	    InCase("prod", "production-value").
 //	    WithDefault("default-value")
 func (router *Router) WithDefault(value string) *Router {
-	router.cases["DEFAULT"] = value
+	router.cases[defaultKey] = value
 	return router
 }
 
@@ -113,6 +117,9 @@ func (router *Router) InCase(option, value string) *Router {
 //	    Resolve()
 //	// Returns: "https://api.example.com"
 func (router *Router) Resolve() string {
-	currentCase := GetEnv(router.variable, "DEFAULT")
+	currentCase := GetEnv(router.variable, defaultKey)
+	if currentCase == defaultKey {
+		return router.cases[defaultKey]
+	}
 	return router.cases[strings.ToLower(currentCase)]
 }
