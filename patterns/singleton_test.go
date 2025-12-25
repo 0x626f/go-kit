@@ -178,8 +178,8 @@ func TestWithContextNil(t *testing.T) {
 	singleton := NewSingleton(constructor)
 	singleton.Instance()
 
-	if receivedContext != nil {
-		t.Error("Expected nil context when WithContext is not called")
+	if receivedContext == nil {
+		t.Error("Expected non nil context when WithContext is not called")
 	}
 }
 

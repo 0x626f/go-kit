@@ -81,6 +81,9 @@ func (singleton *Singleton[T]) WithContext(ctx context.Context) *Singleton[T] {
 //   - A pointer to the singleton instance of type T
 func (singleton *Singleton[T]) Instance() *T {
 	singleton.once.Do(func() {
+		if singleton.ctx == nil {
+			singleton.ctx = context.Background()
+		}
 		singleton.instance = singleton.constructor(singleton.ctx)
 	})
 	return singleton.instance
