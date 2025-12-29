@@ -2,6 +2,7 @@
 package number
 
 import (
+	"encoding/json"
 	"math/big"
 	"strings"
 )
@@ -393,30 +394,40 @@ func (number *BigInt) String() string {
 
 // MarshalText implements the encoding.TextMarshaler interface.
 // This allows BigInt to be serialized to text formats like XML.
-func (number *BigInt) MarshalText() (text []byte, err error) {
+func (number *BigInt) MarshalText() (bytes []byte, err error) {
 	return number.value.MarshalText()
 }
 
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
 // This allows BigInt to be deserialized from text formats like XML.
 // The resulting BigInt will be immutable.
-func (number *BigInt) UnmarshalText(text []byte) error {
+func (number *BigInt) UnmarshalText(bytes []byte) error {
 	number.mutable = false
 	number.value = new(big.Int)
-	return number.value.UnmarshalText(text)
+	return number.value.UnmarshalText(bytes)
 }
 
 // MarshalJSON implements the json.Marshaler interface.
 // This allows BigInt to be serialized to JSON.
-func (number *BigInt) MarshalJSON() (text []byte, err error) {
+func (number *BigInt) MarshalJSON() (bytes []byte, err error) {
 	return number.value.MarshalJSON()
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
 // This allows BigInt to be deserialized from JSON.
 // The resulting BigInt will be immutable.
-func (number *BigInt) UnmarshalJSON(text []byte) error {
+func (number *BigInt) UnmarshalJSON(bytes []byte) error {
 	number.mutable = false
 	number.value = new(big.Int)
-	return number.value.UnmarshalJSON(text)
+
+	var literal string
+	if err := json.Unmarshal(bytes, &literal); err != nil {
+		return err
+	}
+
+	if literal == "null" {
+		return nil
+	}
+
+	return number.value.UnmarshalJSON([]byte(literal))
 }

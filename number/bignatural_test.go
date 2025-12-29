@@ -690,7 +690,7 @@ func TestBigInt_MarshalJSON(t *testing.T) {
 
 func TestBigInt_UnmarshalJSON(t *testing.T) {
 	var a BigInt
-	err := json.Unmarshal([]byte("42"), &a)
+	err := json.Unmarshal([]byte("\"42\""), &a)
 
 	if err != nil {
 		t.Fatalf("UnmarshalJSON failed: %v", err)
