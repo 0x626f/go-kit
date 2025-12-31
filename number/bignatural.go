@@ -129,7 +129,7 @@ func forwardBigInt(number *BigInt) *BigInt {
 	if number.IsMutable() {
 		return number
 	}
-	return BigNatural(int(number.value.Int64()))
+	return BigNatural(number)
 }
 
 // Mut marks this instance as mutable, allowing operations to modify it.

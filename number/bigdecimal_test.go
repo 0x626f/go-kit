@@ -524,7 +524,7 @@ func TestBigFloat_MarshalJSON(t *testing.T) {
 
 func TestBigFloat_UnmarshalJSON(t *testing.T) {
 	var a BigFloat
-	err := json.Unmarshal([]byte("3.14"), &a)
+	err := json.Unmarshal([]byte("\"3.14\""), &a)
 
 	if err != nil {
 		t.Fatalf("UnmarshalJSON failed: %v", err)

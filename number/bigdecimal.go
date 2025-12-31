@@ -2,9 +2,7 @@
 package number
 
 import (
-	"bytes"
 	"encoding/json"
-	"fmt"
 	"math/big"
 )
 
@@ -138,8 +136,7 @@ func forwardBigFloat(number *BigFloat) *BigFloat {
 	if number.IsMutable() {
 		return number
 	}
-	value, _ := number.value.Float64()
-	return BigDecimal(value)
+	return BigDecimal(number)
 }
 
 // Mut marks this instance as mutable, allowing operations to modify it.
@@ -328,21 +325,31 @@ func (number *BigFloat) UnmarshalText(text []byte) error {
 
 // MarshalJSON implements the json.Marshaler interface.
 // This allows BigFloat to be serialized to JSON.
-func (number *BigFloat) MarshalJSON() (text []byte, err error) {
+func (number *BigFloat) MarshalJSON() (bytes []byte, err error) {
 	return json.Marshal(number.value.Text('g', -1))
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
 // This allows BigFloat to be deserialized from JSON.
 // The resulting BigFloat will be immutable.
-func (number *BigFloat) UnmarshalJSON(text []byte) error {
-	if string(text) == "null" {
+func (number *BigFloat) UnmarshalJSON(bytes []byte) error {
+	number.mutable = false
+	number.value = new(big.Float)
+
+	var literal string
+	if err := json.Unmarshal(bytes, &literal); err != nil {
+		return err
+	}
+
+	if literal == "null" {
 		return nil
 	}
 
-	number.mutable = false
-	number.value = new(big.Float)
-	_, err := fmt.Fscan(bytes.NewReader(text), number.value)
+	number.value.SetString(literal)
 
-	return err
+	return nil
+}
+
+func (number *BigFloat) BigNatural() *BigInt {
+	return BigNatural(number)
 }

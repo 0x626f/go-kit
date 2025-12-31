@@ -758,3 +758,20 @@ func TestBigInt_ChainedOperations(t *testing.T) {
 		t.Errorf("got %s, want 20", result.String())
 	}
 }
+
+func TestBigInt_JSONUnmarshalStruct(t *testing.T) {
+	type Test struct {
+		Num *BigInt `json:"num"`
+	}
+	obj := "{\"num\": \"1000\"}"
+
+	var sample Test
+
+	if err := json.Unmarshal([]byte(obj), &sample); err != nil {
+		t.Errorf("%v", err)
+	}
+
+	if sample.Num.String() != "1000" {
+		t.Errorf("got %s, want 1000", sample.Num.String())
+	}
+}
