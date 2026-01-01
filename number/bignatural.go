@@ -431,3 +431,147 @@ func (number *BigInt) UnmarshalJSON(bytes []byte) error {
 
 	return number.value.UnmarshalJSON([]byte(literal))
 }
+
+// MulDiv performs a combined multiply-divide operation: (number * arg0) / arg1.
+// This is useful for avoiding overflow in intermediate calculations and maintaining precision.
+// If this instance is immutable, a new instance is created.
+//
+// Example:
+//
+//	value := BigNatural(10)
+//	result := value.MulDiv(BigNatural(3), BigNatural(2)) // (10 * 3) / 2 = 15
+func (number *BigInt) MulDiv(arg0, arg1 *BigInt) *BigInt {
+	obj := forwardBigInt(number)
+	return obj.Multiply(arg0).Divide(arg1)
+}
+
+// MulDivRoundingUp performs a combined multiply-divide operation with rounding up: (number * arg0) / arg1.
+// If there is a non-zero remainder after division, the result is rounded up by adding 1.
+// This is useful for calculations where you need to ensure the result is never underestimated.
+// If this instance is immutable, a new instance is created.
+//
+// Example:
+//
+//	value := BigNatural(10)
+//	result := value.MulDivRoundingUp(BigNatural(3), BigNatural(4)) // (10 * 3) / 4 = 7.5 -> 8
+func (number *BigInt) MulDivRoundingUp(arg0, arg1 *BigInt) *BigInt {
+	obj := forwardBigInt(number)
+	obj.Multiply(arg0)
+
+	// Calculate remainder before division
+	remainder := BigNatural(obj).Remainder(arg1)
+
+	obj.Divide(arg1)
+
+	if remainder.Sign() != 0 {
+		obj.Add(NaturalOne)
+	}
+	return obj
+}
+
+// Equals returns true if this BigInt is equal to the argument.
+// This is a convenience method that wraps Compare for better readability.
+//
+// Example:
+//
+//	a := BigNatural(42)
+//	b := BigNatural(42)
+//	if a.Equals(b) { /* true */ }
+func (number *BigInt) Equals(arg *BigInt) bool {
+	return number.Compare(arg) == 0
+}
+
+// LessThan returns true if this BigInt is less than the argument.
+// This is a convenience method that wraps Compare for better readability.
+//
+// Example:
+//
+//	a := BigNatural(10)
+//	b := BigNatural(20)
+//	if a.LessThan(b) { /* true */ }
+func (number *BigInt) LessThan(arg *BigInt) bool {
+	return number.Compare(arg) < 0
+}
+
+// GreaterThan returns true if this BigInt is greater than the argument.
+// This is a convenience method that wraps Compare for better readability.
+//
+// Example:
+//
+//	a := BigNatural(20)
+//	b := BigNatural(10)
+//	if a.GreaterThan(b) { /* true */ }
+func (number *BigInt) GreaterThan(arg *BigInt) bool {
+	return number.Compare(arg) > 0
+}
+
+// LessThanOrEquals returns true if this BigInt is less than or equal to the argument.
+// This is a convenience method that wraps Compare for better readability.
+//
+// Example:
+//
+//	a := BigNatural(10)
+//	b := BigNatural(10)
+//	if a.LessThanOrEquals(b) { /* true */ }
+func (number *BigInt) LessThanOrEquals(arg *BigInt) bool {
+	return number.Compare(arg) <= 0
+}
+
+// GreaterThanOrEquals returns true if this BigInt is greater than or equal to the argument.
+// This is a convenience method that wraps Compare for better readability.
+//
+// Example:
+//
+//	a := BigNatural(20)
+//	b := BigNatural(20)
+//	if a.GreaterThanOrEquals(b) { /* true */ }
+func (number *BigInt) GreaterThanOrEquals(arg *BigInt) bool {
+	return number.Compare(arg) >= 0
+}
+
+// Increment adds 1 to this BigInt and returns the result.
+// This is a convenience method equivalent to Add(BigNatural(1)).
+// If this instance is immutable, a new instance is created.
+//
+// Example:
+//
+//	value := BigNatural(41)
+//	result := value.Increment() // 42
+func (number *BigInt) Increment() *BigInt {
+	obj := forwardBigInt(number)
+	return obj.Add(NaturalOne)
+}
+
+// Decrement subtracts 1 from this BigInt and returns the result.
+// This is a convenience method equivalent to Subtract(BigNatural(1)).
+// If this instance is immutable, a new instance is created.
+//
+// Example:
+//
+//	value := BigNatural(43)
+//	result := value.Decrement() // 42
+func (number *BigInt) Decrement() *BigInt {
+	obj := forwardBigInt(number)
+	return obj.Subtract(NaturalOne)
+}
+
+// UnsafeDivide performs division with special handling for division by zero.
+// Unlike Divide, which panics on division by zero, this method returns 0 when
+// dividing by zero instead of panicking. Use this when you want to avoid panics
+// in cases where the divisor might be zero.
+// If this instance is immutable, a new instance is created.
+//
+// Example:
+//
+//	value := BigNatural(42)
+//	result := value.UnsafeDivide(BigNatural(0)) // returns 0 instead of panicking
+//	result2 := value.UnsafeDivide(BigNatural(2)) // returns 21
+func (number *BigInt) UnsafeDivide(arg *BigInt) *BigInt {
+	obj := forwardBigInt(number)
+	if arg.Sign() == 0 {
+		obj.value.SetInt64(0)
+		return obj
+	}
+	obj.value.Quo(obj.value, arg.value)
+	return obj
+}

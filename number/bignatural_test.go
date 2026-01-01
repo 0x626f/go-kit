@@ -775,3 +775,720 @@ func TestBigInt_JSONUnmarshalStruct(t *testing.T) {
 		t.Errorf("got %s, want 1000", sample.Num.String())
 	}
 }
+
+func TestBigInt_MulDiv(t *testing.T) {
+	tests := []struct {
+		name string
+		num  int
+		arg0 int
+		arg1 int
+		want string
+	}{
+		{
+			name: "simple case",
+			num:  10,
+			arg0: 3,
+			arg1: 2,
+			want: "15",
+		},
+		{
+			name: "exact division",
+			num:  12,
+			arg0: 5,
+			arg1: 3,
+			want: "20",
+		},
+		{
+			name: "truncating division",
+			num:  10,
+			arg0: 3,
+			arg1: 4,
+			want: "7",
+		},
+		{
+			name: "with zero numerator",
+			num:  0,
+			arg0: 100,
+			arg1: 5,
+			want: "0",
+		},
+		{
+			name: "negative result",
+			num:  -10,
+			arg0: 3,
+			arg1: 2,
+			want: "-15",
+		},
+		{
+			name: "large numbers",
+			num:  1000000,
+			arg0: 999999,
+			arg1: 3,
+			want: "333333000000",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			num := BigNatural(tt.num)
+			arg0 := BigNatural(tt.arg0)
+			arg1 := BigNatural(tt.arg1)
+			result := num.MulDiv(arg0, arg1)
+
+			if result.String() != tt.want {
+				t.Errorf("got %s, want %s", result.String(), tt.want)
+			}
+		})
+	}
+}
+
+func TestBigInt_MulDiv_Immutability(t *testing.T) {
+	num := BigNatural(10).UnMut()
+	arg0 := BigNatural(3)
+	arg1 := BigNatural(2)
+	original := num.String()
+
+	result := num.MulDiv(arg0, arg1)
+
+	if num.String() != original {
+		t.Error("immutable BigInt was modified by MulDiv")
+	}
+	if result.String() != "15" {
+		t.Errorf("got %s, want 15", result.String())
+	}
+}
+
+func TestBigInt_MulDivRoundingUp(t *testing.T) {
+	tests := []struct {
+		name string
+		num  int
+		arg0 int
+		arg1 int
+		want string
+	}{
+		{
+			name: "exact division - no rounding",
+			num:  10,
+			arg0: 4,
+			arg1: 2,
+			want: "20",
+		},
+		{
+			name: "rounds up with remainder",
+			num:  10,
+			arg0: 3,
+			arg1: 4,
+			want: "8",
+		},
+		{
+			name: "rounds up small remainder",
+			num:  5,
+			arg0: 3,
+			arg1: 7,
+			want: "3",
+		},
+		{
+			name: "large remainder",
+			num:  100,
+			arg0: 7,
+			arg1: 3,
+			want: "234",
+		},
+		{
+			name: "zero result",
+			num:  0,
+			arg0: 100,
+			arg1: 5,
+			want: "0",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			num := BigNatural(tt.num)
+			arg0 := BigNatural(tt.arg0)
+			arg1 := BigNatural(tt.arg1)
+			result := num.MulDivRoundingUp(arg0, arg1)
+
+			if result.String() != tt.want {
+				t.Errorf("got %s, want %s", result.String(), tt.want)
+			}
+		})
+	}
+}
+
+func TestBigInt_MulDivRoundingUp_Immutability(t *testing.T) {
+	num := BigNatural(10).UnMut()
+	arg0 := BigNatural(3)
+	arg1 := BigNatural(4)
+	original := num.String()
+
+	result := num.MulDivRoundingUp(arg0, arg1)
+
+	if num.String() != original {
+		t.Error("immutable BigInt was modified by MulDivRoundingUp")
+	}
+	if result.String() != "8" {
+		t.Errorf("got %s, want 8", result.String())
+	}
+}
+
+func TestBigInt_Equals(t *testing.T) {
+	tests := []struct {
+		name string
+		a    int
+		b    int
+		want bool
+	}{
+		{
+			name: "equal positive",
+			a:    42,
+			b:    42,
+			want: true,
+		},
+		{
+			name: "equal negative",
+			a:    -42,
+			b:    -42,
+			want: true,
+		},
+		{
+			name: "equal zero",
+			a:    0,
+			b:    0,
+			want: true,
+		},
+		{
+			name: "not equal - different values",
+			a:    42,
+			b:    43,
+			want: false,
+		},
+		{
+			name: "not equal - different signs",
+			a:    42,
+			b:    -42,
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := BigNatural(tt.a)
+			b := BigNatural(tt.b)
+			result := a.Equals(b)
+
+			if result != tt.want {
+				t.Errorf("got %v, want %v", result, tt.want)
+			}
+		})
+	}
+}
+
+func TestBigInt_Equals_LargeNumbers(t *testing.T) {
+	a := BigNatural("123456789012345678901234567890")
+	b := BigNatural("123456789012345678901234567890")
+	c := BigNatural("123456789012345678901234567891")
+
+	if !a.Equals(b) {
+		t.Error("equal large numbers should return true")
+	}
+	if a.Equals(c) {
+		t.Error("different large numbers should return false")
+	}
+}
+
+func TestBigInt_LessThan(t *testing.T) {
+	tests := []struct {
+		name string
+		a    int
+		b    int
+		want bool
+	}{
+		{
+			name: "less than positive",
+			a:    10,
+			b:    20,
+			want: true,
+		},
+		{
+			name: "not less than - equal",
+			a:    20,
+			b:    20,
+			want: false,
+		},
+		{
+			name: "not less than - greater",
+			a:    30,
+			b:    20,
+			want: false,
+		},
+		{
+			name: "negative less than positive",
+			a:    -10,
+			b:    10,
+			want: true,
+		},
+		{
+			name: "negative less than negative",
+			a:    -20,
+			b:    -10,
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := BigNatural(tt.a)
+			b := BigNatural(tt.b)
+			result := a.LessThan(b)
+
+			if result != tt.want {
+				t.Errorf("got %v, want %v", result, tt.want)
+			}
+		})
+	}
+}
+
+func TestBigInt_GreaterThan(t *testing.T) {
+	tests := []struct {
+		name string
+		a    int
+		b    int
+		want bool
+	}{
+		{
+			name: "greater than positive",
+			a:    20,
+			b:    10,
+			want: true,
+		},
+		{
+			name: "not greater than - equal",
+			a:    20,
+			b:    20,
+			want: false,
+		},
+		{
+			name: "not greater than - less",
+			a:    10,
+			b:    20,
+			want: false,
+		},
+		{
+			name: "positive greater than negative",
+			a:    10,
+			b:    -10,
+			want: true,
+		},
+		{
+			name: "negative greater than negative",
+			a:    -10,
+			b:    -20,
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := BigNatural(tt.a)
+			b := BigNatural(tt.b)
+			result := a.GreaterThan(b)
+
+			if result != tt.want {
+				t.Errorf("got %v, want %v", result, tt.want)
+			}
+		})
+	}
+}
+
+func TestBigInt_LessThanOrEquals(t *testing.T) {
+	tests := []struct {
+		name string
+		a    int
+		b    int
+		want bool
+	}{
+		{
+			name: "less than",
+			a:    10,
+			b:    20,
+			want: true,
+		},
+		{
+			name: "equal",
+			a:    20,
+			b:    20,
+			want: true,
+		},
+		{
+			name: "greater than",
+			a:    30,
+			b:    20,
+			want: false,
+		},
+		{
+			name: "negative cases",
+			a:    -10,
+			b:    -10,
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := BigNatural(tt.a)
+			b := BigNatural(tt.b)
+			result := a.LessThanOrEquals(b)
+
+			if result != tt.want {
+				t.Errorf("got %v, want %v", result, tt.want)
+			}
+		})
+	}
+}
+
+func TestBigInt_GreaterThanOrEquals(t *testing.T) {
+	tests := []struct {
+		name string
+		a    int
+		b    int
+		want bool
+	}{
+		{
+			name: "greater than",
+			a:    20,
+			b:    10,
+			want: true,
+		},
+		{
+			name: "equal",
+			a:    20,
+			b:    20,
+			want: true,
+		},
+		{
+			name: "less than",
+			a:    10,
+			b:    20,
+			want: false,
+		},
+		{
+			name: "negative cases",
+			a:    -10,
+			b:    -10,
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := BigNatural(tt.a)
+			b := BigNatural(tt.b)
+			result := a.GreaterThanOrEquals(b)
+
+			if result != tt.want {
+				t.Errorf("got %v, want %v", result, tt.want)
+			}
+		})
+	}
+}
+
+func TestBigInt_ComparisonMethods_Consistency(t *testing.T) {
+	// Test that comparison methods are consistent with Compare
+	a := BigNatural(10)
+	b := BigNatural(20)
+	c := BigNatural(10)
+
+	// Verify consistency
+	if a.LessThan(b) != (a.Compare(b) < 0) {
+		t.Error("LessThan inconsistent with Compare")
+	}
+	if a.GreaterThan(b) != (a.Compare(b) > 0) {
+		t.Error("GreaterThan inconsistent with Compare")
+	}
+	if a.Equals(c) != (a.Compare(c) == 0) {
+		t.Error("Equals inconsistent with Compare")
+	}
+	if a.LessThanOrEquals(b) != (a.Compare(b) <= 0) {
+		t.Error("LessThanOrEquals inconsistent with Compare")
+	}
+	if a.GreaterThanOrEquals(c) != (a.Compare(c) >= 0) {
+		t.Error("GreaterThanOrEquals inconsistent with Compare")
+	}
+}
+
+func TestBigInt_Increment(t *testing.T) {
+	tests := []struct {
+		name  string
+		value int
+		want  string
+	}{
+		{
+			name:  "positive number",
+			value: 41,
+			want:  "42",
+		},
+		{
+			name:  "zero",
+			value: 0,
+			want:  "1",
+		},
+		{
+			name:  "negative number",
+			value: -1,
+			want:  "0",
+		},
+		{
+			name:  "large positive",
+			value: 999999,
+			want:  "1000000",
+		},
+		{
+			name:  "large negative",
+			value: -100,
+			want:  "-99",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			num := BigNatural(tt.value)
+			result := num.Increment()
+
+			if result.String() != tt.want {
+				t.Errorf("got %s, want %s", result.String(), tt.want)
+			}
+		})
+	}
+}
+
+func TestBigInt_Increment_Immutability(t *testing.T) {
+	num := BigNatural(10).UnMut()
+	original := num.String()
+
+	result := num.Increment()
+
+	if num.String() != original {
+		t.Error("immutable BigInt was modified by Increment")
+	}
+	if result.String() != "11" {
+		t.Errorf("got %s, want 11", result.String())
+	}
+}
+
+func TestBigInt_Increment_LargeNumbers(t *testing.T) {
+	num := BigNatural("999999999999999999999999999999")
+	result := num.Increment()
+
+	expected := "1000000000000000000000000000000"
+	if result.String() != expected {
+		t.Errorf("got %s, want %s", result.String(), expected)
+	}
+}
+
+func TestBigInt_Decrement(t *testing.T) {
+	tests := []struct {
+		name  string
+		value int
+		want  string
+	}{
+		{
+			name:  "positive number",
+			value: 43,
+			want:  "42",
+		},
+		{
+			name:  "one",
+			value: 1,
+			want:  "0",
+		},
+		{
+			name:  "zero",
+			value: 0,
+			want:  "-1",
+		},
+		{
+			name:  "negative number",
+			value: -5,
+			want:  "-6",
+		},
+		{
+			name:  "large positive",
+			value: 1000000,
+			want:  "999999",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			num := BigNatural(tt.value)
+			result := num.Decrement()
+
+			if result.String() != tt.want {
+				t.Errorf("got %s, want %s", result.String(), tt.want)
+			}
+		})
+	}
+}
+
+func TestBigInt_Decrement_Immutability(t *testing.T) {
+	num := BigNatural(10).UnMut()
+	original := num.String()
+
+	result := num.Decrement()
+
+	if num.String() != original {
+		t.Error("immutable BigInt was modified by Decrement")
+	}
+	if result.String() != "9" {
+		t.Errorf("got %s, want 9", result.String())
+	}
+}
+
+func TestBigInt_Decrement_LargeNumbers(t *testing.T) {
+	num := BigNatural("1000000000000000000000000000000")
+	result := num.Decrement()
+
+	expected := "999999999999999999999999999999"
+	if result.String() != expected {
+		t.Errorf("got %s, want %s", result.String(), expected)
+	}
+}
+
+func TestBigInt_IncrementDecrement_RoundTrip(t *testing.T) {
+	original := BigNatural(42)
+	result := original.Increment().Decrement()
+
+	if !result.Equals(original) {
+		t.Errorf("round trip failed: got %s, want %s", result.String(), original.String())
+	}
+}
+
+func TestBigInt_UnsafeDivide(t *testing.T) {
+	tests := []struct {
+		name     string
+		dividend int
+		divisor  int
+		want     string
+	}{
+		{
+			name:     "normal division",
+			dividend: 42,
+			divisor:  6,
+			want:     "7",
+		},
+		{
+			name:     "division by zero returns zero",
+			dividend: 42,
+			divisor:  0,
+			want:     "0",
+		},
+		{
+			name:     "zero divided by zero",
+			dividend: 0,
+			divisor:  0,
+			want:     "0",
+		},
+		{
+			name:     "zero divided by non-zero",
+			dividend: 0,
+			divisor:  5,
+			want:     "0",
+		},
+		{
+			name:     "truncating division",
+			dividend: 10,
+			divisor:  3,
+			want:     "3",
+		},
+		{
+			name:     "negative dividend",
+			dividend: -42,
+			divisor:  6,
+			want:     "-7",
+		},
+		{
+			name:     "negative divisor",
+			dividend: 42,
+			divisor:  -6,
+			want:     "-7",
+		},
+		{
+			name:     "both negative",
+			dividend: -42,
+			divisor:  -6,
+			want:     "7",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dividend := BigNatural(tt.dividend)
+			divisor := BigNatural(tt.divisor)
+			result := dividend.UnsafeDivide(divisor)
+
+			if result.String() != tt.want {
+				t.Errorf("got %s, want %s", result.String(), tt.want)
+			}
+		})
+	}
+}
+
+func TestBigInt_UnsafeDivide_Immutability(t *testing.T) {
+	num := BigNatural(42).UnMut()
+	divisor := BigNatural(6)
+	original := num.String()
+
+	result := num.UnsafeDivide(divisor)
+
+	if num.String() != original {
+		t.Error("immutable BigInt was modified by UnsafeDivide")
+	}
+	if result.String() != "7" {
+		t.Errorf("got %s, want 7", result.String())
+	}
+}
+
+func TestBigInt_UnsafeDivide_LargeNumbers(t *testing.T) {
+	dividend := BigNatural("123456789012345678901234567890")
+	divisor := BigNatural("123456789012345678901234567890")
+	result := dividend.UnsafeDivide(divisor)
+
+	if result.String() != "1" {
+		t.Errorf("got %s, want 1", result.String())
+	}
+
+	// Test division by zero with large number
+	result2 := dividend.UnsafeDivide(BigNatural(0))
+	if result2.String() != "0" {
+		t.Errorf("large number divided by zero: got %s, want 0", result2.String())
+	}
+}
+
+func TestBigInt_UnsafeDivide_VsNormalDivide(t *testing.T) {
+	// Test that UnsafeDivide behaves the same as Divide for non-zero divisors
+	dividend := BigNatural(100)
+	divisor := BigNatural(7)
+
+	unsafeResult := dividend.UnsafeDivide(divisor)
+	normalResult := dividend.Divide(divisor)
+
+	if !unsafeResult.Equals(normalResult) {
+		t.Errorf("UnsafeDivide differs from Divide for non-zero divisor: got %s, want %s",
+			unsafeResult.String(), normalResult.String())
+	}
+}
+
+func TestBigInt_Divide_PanicsOnZero(t *testing.T) {
+	// Verify that normal Divide panics on division by zero (expected behavior)
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("Divide should panic on division by zero")
+		}
+	}()
+
+	dividend := BigNatural(42)
+	divisor := BigNatural(0)
+	dividend.Divide(divisor) // This should panic
+}
