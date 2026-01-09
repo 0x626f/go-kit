@@ -63,7 +63,7 @@ func RegisterWorkerOnDelay(ctx context.Context, callback func(), delay time.Dura
 //
 // Note: This function starts a goroutine and returns immediately.
 // If the signal channel is closed, the callback will not execute for that event.
-func RegisterWorkerOnSignal(ctx context.Context, callback func(), signal chan any) {
+func RegisterWorkerOnSignal(ctx context.Context, callback func(), signal <-chan any) {
 	go func() {
 		for {
 			select {
@@ -102,7 +102,7 @@ func RegisterWorkerOnSignal(ctx context.Context, callback func(), signal chan an
 //
 // Note: This function starts a goroutine and returns immediately.
 // If the signal channel is closed, the callback will not execute for that event.
-func RegisterWorkerOnEvent[T any](ctx context.Context, callback func(T), signal chan T) {
+func RegisterWorkerOnEvent[T any](ctx context.Context, callback func(T), signal <-chan T) {
 	go func() {
 		for {
 			select {
