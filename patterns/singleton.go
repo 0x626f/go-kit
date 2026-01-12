@@ -66,7 +66,9 @@ func NewSingleton[T any](constructor Constructor[T]) *Singleton[T] {
 // Note: Calling this method after Instance() has been called has no effect,
 // as the instance has already been created.
 func (singleton *Singleton[T]) WithContext(ctx context.Context) *Singleton[T] {
-	singleton.ctx = ctx
+	if singleton.ctx == nil {
+		singleton.ctx = ctx
+	}
 	return singleton
 }
 
