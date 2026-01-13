@@ -13,8 +13,8 @@ type ErrorHandler func(error)
 // Receiver is a function that receives and processes an event without returning any value.
 // It is typically used as a terminal handler in routing scenarios where events are
 // dispatched to specific receivers based on routing logic.
-type Receiver[Event any] func(Event)
+type Receiver[Event any] func(Event) error
 
 // Resolver is a function that examines an event and returns an ID used for routing decisions.
 // The ID type must be comparable and is used to determine which receiver should handle the event.
-type Resolver[Event any, ID comparable] func(Event) ID
+type Resolver[Event any, ID comparable] func(Event) (bool, ID)

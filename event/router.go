@@ -55,11 +55,10 @@ func (router *Router[Event, ID]) Route(event Event) error {
 		return fmt.Errorf("missing event resolver")
 	}
 
-	id := router.resolver(event)
-	receiver := router.routing[id]
-
-	if receiver != nil {
-		receiver(event)
+	if resolved, id := router.resolver(event); resolved {
+		if receiver, ok := router.routing[id]; ok {
+			return receiver(event)
+		}
 	}
 	return nil
 }

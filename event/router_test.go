@@ -21,8 +21,9 @@ func TestNewRouter(t *testing.T) {
 func TestRouter_AddReceiver(t *testing.T) {
 	router := NewRouter[mockEvent, int]()
 	called := false
-	receiver := func(event mockEvent) {
+	receiver := func(event mockEvent) error {
 		called = true
+		return nil
 	}
 
 	result := router.AddReceiver(1, receiver)
@@ -31,7 +32,7 @@ func TestRouter_AddReceiver(t *testing.T) {
 	}
 
 	event := mockEvent{root: "test"}
-	router.routing[1](event)
+	_ = router.routing[1](event)
 
 	if !called {
 		t.Error("receiver should be callable from routing map")
@@ -42,11 +43,13 @@ func TestRouter_AddReceiver_MultipleReceivers(t *testing.T) {
 	router := NewRouter[mockEvent, string]()
 	called := map[string]bool{}
 
-	receiver1 := func(event mockEvent) {
+	receiver1 := func(event mockEvent) error {
 		called["receiver1"] = true
+		return nil
 	}
-	receiver2 := func(event mockEvent) {
+	receiver2 := func(event mockEvent) error {
 		called["receiver2"] = true
+		return nil
 	}
 
 	router.AddReceiver("id1", receiver1)
@@ -57,8 +60,8 @@ func TestRouter_AddReceiver_MultipleReceivers(t *testing.T) {
 	}
 
 	event := mockEvent{root: "test"}
-	router.routing["id1"](event)
-	router.routing["id2"](event)
+	_ = router.routing["id1"](event)
+	_ = router.routing["id2"](event)
 
 	if !called["receiver1"] || !called["receiver2"] {
 		t.Error("all receivers should be callable")
@@ -67,8 +70,8 @@ func TestRouter_AddReceiver_MultipleReceivers(t *testing.T) {
 
 func TestRouter_SetResolver(t *testing.T) {
 	router := NewRouter[mockEvent, int]()
-	resolver := func(event mockEvent) int {
-		return 1
+	resolver := func(event mockEvent) (bool, int) {
+		return true, 1
 	}
 
 	result := router.SetResolver(resolver)
@@ -79,8 +82,8 @@ func TestRouter_SetResolver(t *testing.T) {
 
 func TestRouter_SetResolver_BugInImplementation(t *testing.T) {
 	router := NewRouter[mockEvent, int]()
-	resolver := func(event mockEvent) int {
-		return 1
+	resolver := func(event mockEvent) (bool, int) {
+		return true, 1
 	}
 
 	router.SetResolver(resolver)
@@ -95,12 +98,13 @@ func TestRouter_Route_Success(t *testing.T) {
 	receivedEvent := false
 	var receivedRoot string
 
-	receiver := func(event mockEvent) {
+	receiver := func(event mockEvent) error {
 		receivedEvent = true
 		receivedRoot = event.root
+		return nil
 	}
-	resolver := func(event mockEvent) int {
-		return 1
+	resolver := func(event mockEvent) (bool, int) {
+		return true, 1
 	}
 
 	router.AddReceiver(1, receiver)
@@ -122,7 +126,7 @@ func TestRouter_Route_Success(t *testing.T) {
 
 func TestRouter_Route_MissingResolver(t *testing.T) {
 	router := NewRouter[mockEvent, int]()
-	receiver := func(event mockEvent) {}
+	receiver := func(event mockEvent) error { return nil }
 
 	router.AddReceiver(1, receiver)
 
@@ -139,11 +143,11 @@ func TestRouter_Route_MissingResolver(t *testing.T) {
 
 func TestRouter_Route_MissingReceiver(t *testing.T) {
 	router := NewRouter[mockEvent, int]()
-	resolver := func(event mockEvent) int {
-		return 99
+	resolver := func(event mockEvent) (bool, int) {
+		return true, 99
 	}
 
-	router.AddReceiver(1, func(event mockEvent) {})
+	router.AddReceiver(1, func(event mockEvent) error { return nil })
 	router.resolver = resolver
 
 	event := mockEvent{root: "test"}
@@ -159,11 +163,12 @@ func TestRouter_Route_DifferentIDTypes(t *testing.T) {
 		router := NewRouter[mockEvent, string]()
 		called := false
 
-		receiver := func(event mockEvent) {
+		receiver := func(event mockEvent) error {
 			called = true
+			return nil
 		}
-		resolver := func(event mockEvent) string {
-			return "route-a"
+		resolver := func(event mockEvent) (bool, string) {
+			return true, "route-a"
 		}
 
 		router.AddReceiver("route-a", receiver)
@@ -189,11 +194,12 @@ func TestRouter_Route_DifferentIDTypes(t *testing.T) {
 		router := NewRouter[mockEvent, RouteID]()
 		called := false
 
-		receiver := func(event mockEvent) {
+		receiver := func(event mockEvent) error {
 			called = true
+			return nil
 		}
-		resolver := func(event mockEvent) RouteID {
-			return RouteID{Type: "user", ID: 123}
+		resolver := func(event mockEvent) (bool, RouteID) {
+			return true, RouteID{Type: "user", ID: 123}
 		}
 
 		router.AddReceiver(RouteID{Type: "user", ID: 123}, receiver)
@@ -216,18 +222,20 @@ func TestRouter_Route_ResolverBasedOnEventData(t *testing.T) {
 	receivedByA := false
 	receivedByB := false
 
-	receiverA := func(event mockEvent) {
+	receiverA := func(event mockEvent) error {
 		receivedByA = true
+		return nil
 	}
-	receiverB := func(event mockEvent) {
+	receiverB := func(event mockEvent) error {
 		receivedByB = true
+		return nil
 	}
-	resolver := func(event mockEvent) string {
+	resolver := func(event mockEvent) (bool, string) {
 		root := event.root
 		if len(root) > 5 {
-			return "route-a"
+			return true, "route-a"
 		}
-		return "route-b"
+		return true, "route-b"
 	}
 
 	router.AddReceiver("route-a", receiverA)
@@ -252,13 +260,14 @@ func TestRouter_Chaining(t *testing.T) {
 	called := false
 
 	router := NewRouter[mockEvent, int]().
-		AddReceiver(1, func(event mockEvent) {
+		AddReceiver(1, func(event mockEvent) error {
 			called = true
+			return nil
 		}).
-		AddReceiver(2, func(event mockEvent) {})
+		AddReceiver(2, func(event mockEvent) error { return nil })
 
-	router.resolver = func(event mockEvent) int {
-		return 1
+	router.resolver = func(event mockEvent) (bool, int) {
+		return true, 1
 	}
 
 	event := mockEvent{root: "test"}
@@ -276,26 +285,29 @@ func TestRouter_Route_MultipleRoutingScenarios(t *testing.T) {
 	router := NewRouter[intEvent, string]()
 	callOrder := []string{}
 
-	router.AddReceiver("handler1", func(event intEvent) {
+	router.AddReceiver("handler1", func(event intEvent) error {
 		callOrder = append(callOrder, "handler1")
+		return nil
 	})
-	router.AddReceiver("handler2", func(event intEvent) {
+	router.AddReceiver("handler2", func(event intEvent) error {
 		callOrder = append(callOrder, "handler2")
+		return nil
 	})
-	router.AddReceiver("handler3", func(event intEvent) {
+	router.AddReceiver("handler3", func(event intEvent) error {
 		callOrder = append(callOrder, "handler3")
+		return nil
 	})
 
 	ie := intEvent{}
 
-	router.resolver = func(event intEvent) string {
+	router.resolver = func(event intEvent) (bool, string) {
 		val := event.root
 		if val == 1 {
-			return "handler1"
+			return true, "handler1"
 		} else if val == 2 {
-			return "handler2"
+			return true, "handler2"
 		}
-		return "handler3"
+		return true, "handler3"
 	}
 
 	ie.root = 1
