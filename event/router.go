@@ -8,15 +8,15 @@ import "fmt"
 //
 // The ID type parameter must be comparable and is used as a key to map events
 // to their corresponding receivers.
-type Router[Root any, ID comparable] struct {
-	routing  map[ID]Receiver[Root]
-	resolver Resolver[Root, ID]
+type Router[Event any, ID comparable] struct {
+	routing  map[ID]Receiver[Event]
+	resolver Resolver[Event, ID]
 }
 
 // NewRouter creates and returns a new Router instance with an empty routing map.
-func NewRouter[Root any, ID comparable]() *Router[Root, ID] {
-	return &Router[Root, ID]{
-		routing: make(map[ID]Receiver[Root]),
+func NewRouter[Event any, ID comparable]() *Router[Event, ID] {
+	return &Router[Event, ID]{
+		routing: make(map[ID]Receiver[Event]),
 	}
 }
 
@@ -24,7 +24,7 @@ func NewRouter[Root any, ID comparable]() *Router[Root, ID] {
 // When an event is routed and the resolver returns this ID, the corresponding
 // receiver will be called. If a receiver already exists for the ID, it will be replaced.
 // Returns the router instance for method chaining.
-func (router *Router[Root, ID]) AddReceiver(id ID, receiver Receiver[Root]) *Router[Root, ID] {
+func (router *Router[Event, ID]) AddReceiver(id ID, receiver Receiver[Event]) *Router[Event, ID] {
 	router.routing[id] = receiver
 	return router
 }
@@ -38,7 +38,7 @@ func (router *Router[Root, ID]) AddReceiver(id ID, receiver Receiver[Root]) *Rou
 // it directly to router.resolver. If a resolver is already set, subsequent calls
 // are ignored (only the first resolver is used).
 // Returns the router instance for method chaining.
-func (router *Router[Root, ID]) SetResolver(resolver Resolver[Root, ID]) *Router[Root, ID] {
+func (router *Router[Event, ID]) SetResolver(resolver Resolver[Event, ID]) *Router[Event, ID] {
 	if resolver == nil {
 		router.resolver = resolver
 	}
@@ -50,7 +50,7 @@ func (router *Router[Root, ID]) SetResolver(resolver Resolver[Root, ID]) *Router
 //
 // Returns an error if no resolver is configured. If the resolver returns an ID
 // that has no registered receiver, the event is silently ignored (no error is returned).
-func (router *Router[Root, ID]) Route(event Event[Root]) error {
+func (router *Router[Event, ID]) Route(event Event) error {
 	if router.resolver == nil {
 		return fmt.Errorf("missing event resolver")
 	}

@@ -9,12 +9,8 @@ type mockEvent struct {
 	root string
 }
 
-func (m *mockEvent) Root() string {
-	return m.root
-}
-
 func TestNewPipeline(t *testing.T) {
-	pipeline := NewPipeline[string]()
+	pipeline := NewPipeline[mockEvent]()
 	if pipeline == nil {
 		t.Fatal("NewPipeline returned nil")
 	}
@@ -24,8 +20,8 @@ func TestNewPipeline(t *testing.T) {
 }
 
 func TestPipeline_AddHandler(t *testing.T) {
-	pipeline := NewPipeline[string]()
-	handler := func(event Event[string]) (bool, error) {
+	pipeline := NewPipeline[mockEvent]()
+	handler := func(event mockEvent) (bool, error) {
 		return true, nil
 	}
 
@@ -39,8 +35,8 @@ func TestPipeline_AddHandler(t *testing.T) {
 }
 
 func TestPipeline_OnSuccess(t *testing.T) {
-	pipeline := NewPipeline[string]()
-	successHandler := func(event Event[string]) (bool, error) {
+	pipeline := NewPipeline[mockEvent]()
+	successHandler := func(event mockEvent) (bool, error) {
 		return true, nil
 	}
 
@@ -54,13 +50,13 @@ func TestPipeline_OnSuccess(t *testing.T) {
 }
 
 func TestPipeline_OnSuccess_OnlyFirstSet(t *testing.T) {
-	pipeline := NewPipeline[string]()
+	pipeline := NewPipeline[mockEvent]()
 	called := 0
-	firstHandler := func(event Event[string]) (bool, error) {
+	firstHandler := func(event mockEvent) (bool, error) {
 		called = 1
 		return true, nil
 	}
-	secondHandler := func(event Event[string]) (bool, error) {
+	secondHandler := func(event mockEvent) (bool, error) {
 		called = 2
 		return true, nil
 	}
@@ -68,7 +64,7 @@ func TestPipeline_OnSuccess_OnlyFirstSet(t *testing.T) {
 	pipeline.OnSuccess(firstHandler)
 	pipeline.OnSuccess(secondHandler)
 
-	event := &mockEvent{root: "test"}
+	event := mockEvent{root: "test"}
 	pipeline.Process(event)
 
 	if called != 1 {
@@ -77,7 +73,7 @@ func TestPipeline_OnSuccess_OnlyFirstSet(t *testing.T) {
 }
 
 func TestPipeline_OnError(t *testing.T) {
-	pipeline := NewPipeline[string]()
+	pipeline := NewPipeline[mockEvent]()
 	errorHandler := func(err error) {}
 
 	result := pipeline.OnError(errorHandler)
@@ -90,7 +86,7 @@ func TestPipeline_OnError(t *testing.T) {
 }
 
 func TestPipeline_OnError_OnlyFirstSet(t *testing.T) {
-	pipeline := NewPipeline[string]()
+	pipeline := NewPipeline[mockEvent]()
 	called := 0
 	firstHandler := func(err error) {
 		called = 1
@@ -102,12 +98,12 @@ func TestPipeline_OnError_OnlyFirstSet(t *testing.T) {
 	pipeline.OnError(firstHandler)
 	pipeline.OnError(secondHandler)
 
-	handler := func(event Event[string]) (bool, error) {
+	handler := func(event mockEvent) (bool, error) {
 		return false, errors.New("test error")
 	}
 	pipeline.AddHandler(handler)
 
-	event := &mockEvent{root: "test"}
+	event := mockEvent{root: "test"}
 	pipeline.Process(event)
 
 	if called != 1 {
@@ -116,15 +112,15 @@ func TestPipeline_OnError_OnlyFirstSet(t *testing.T) {
 }
 
 func TestPipeline_Process_SingleHandler(t *testing.T) {
-	pipeline := NewPipeline[string]()
+	pipeline := NewPipeline[mockEvent]()
 	called := false
-	handler := func(event Event[string]) (bool, error) {
+	handler := func(event mockEvent) (bool, error) {
 		called = true
 		return true, nil
 	}
 
 	pipeline.AddHandler(handler)
-	event := &mockEvent{root: "test"}
+	event := mockEvent{root: "test"}
 	pipeline.Process(event)
 
 	if !called {
@@ -133,24 +129,24 @@ func TestPipeline_Process_SingleHandler(t *testing.T) {
 }
 
 func TestPipeline_Process_MultipleHandlers(t *testing.T) {
-	pipeline := NewPipeline[string]()
+	pipeline := NewPipeline[mockEvent]()
 	order := []int{}
 
-	handler1 := func(event Event[string]) (bool, error) {
+	handler1 := func(event mockEvent) (bool, error) {
 		order = append(order, 1)
 		return true, nil
 	}
-	handler2 := func(event Event[string]) (bool, error) {
+	handler2 := func(event mockEvent) (bool, error) {
 		order = append(order, 2)
 		return true, nil
 	}
-	handler3 := func(event Event[string]) (bool, error) {
+	handler3 := func(event mockEvent) (bool, error) {
 		order = append(order, 3)
 		return true, nil
 	}
 
 	pipeline.AddHandler(handler1).AddHandler(handler2).AddHandler(handler3)
-	event := &mockEvent{root: "test"}
+	event := mockEvent{root: "test"}
 	pipeline.Process(event)
 
 	if len(order) != 3 {
@@ -162,24 +158,24 @@ func TestPipeline_Process_MultipleHandlers(t *testing.T) {
 }
 
 func TestPipeline_Process_HandlerReturnsFalse(t *testing.T) {
-	pipeline := NewPipeline[string]()
+	pipeline := NewPipeline[mockEvent]()
 	order := []int{}
 
-	handler1 := func(event Event[string]) (bool, error) {
+	handler1 := func(event mockEvent) (bool, error) {
 		order = append(order, 1)
 		return true, nil
 	}
-	handler2 := func(event Event[string]) (bool, error) {
+	handler2 := func(event mockEvent) (bool, error) {
 		order = append(order, 2)
 		return false, nil
 	}
-	handler3 := func(event Event[string]) (bool, error) {
+	handler3 := func(event mockEvent) (bool, error) {
 		order = append(order, 3)
 		return true, nil
 	}
 
 	pipeline.AddHandler(handler1).AddHandler(handler2).AddHandler(handler3)
-	event := &mockEvent{root: "test"}
+	event := mockEvent{root: "test"}
 	pipeline.Process(event)
 
 	if len(order) != 2 {
@@ -191,19 +187,19 @@ func TestPipeline_Process_HandlerReturnsFalse(t *testing.T) {
 }
 
 func TestPipeline_Process_HandlerReturnsError(t *testing.T) {
-	pipeline := NewPipeline[string]()
+	pipeline := NewPipeline[mockEvent]()
 	order := []int{}
 	var capturedError error
 
-	handler1 := func(event Event[string]) (bool, error) {
+	handler1 := func(event mockEvent) (bool, error) {
 		order = append(order, 1)
 		return true, nil
 	}
-	handler2 := func(event Event[string]) (bool, error) {
+	handler2 := func(event mockEvent) (bool, error) {
 		order = append(order, 2)
 		return false, errors.New("test error")
 	}
-	handler3 := func(event Event[string]) (bool, error) {
+	handler3 := func(event mockEvent) (bool, error) {
 		order = append(order, 3)
 		return true, nil
 	}
@@ -213,7 +209,7 @@ func TestPipeline_Process_HandlerReturnsError(t *testing.T) {
 		capturedError = err
 	})
 
-	event := &mockEvent{root: "test"}
+	event := mockEvent{root: "test"}
 	pipeline.Process(event)
 
 	if len(order) != 2 {
@@ -228,19 +224,19 @@ func TestPipeline_Process_HandlerReturnsError(t *testing.T) {
 }
 
 func TestPipeline_Process_OnSuccessCalled(t *testing.T) {
-	pipeline := NewPipeline[string]()
+	pipeline := NewPipeline[mockEvent]()
 	successCalled := false
 
-	handler := func(event Event[string]) (bool, error) {
+	handler := func(event mockEvent) (bool, error) {
 		return true, nil
 	}
-	successHandler := func(event Event[string]) (bool, error) {
+	successHandler := func(event mockEvent) (bool, error) {
 		successCalled = true
 		return true, nil
 	}
 
 	pipeline.AddHandler(handler).OnSuccess(successHandler)
-	event := &mockEvent{root: "test"}
+	event := mockEvent{root: "test"}
 	pipeline.Process(event)
 
 	if !successCalled {
@@ -249,13 +245,13 @@ func TestPipeline_Process_OnSuccessCalled(t *testing.T) {
 }
 
 func TestPipeline_Process_OnSuccessNotCalledWhenHandlerFails(t *testing.T) {
-	pipeline := NewPipeline[string]()
+	pipeline := NewPipeline[mockEvent]()
 	successCalled := false
 
-	handler := func(event Event[string]) (bool, error) {
+	handler := func(event mockEvent) (bool, error) {
 		return false, errors.New("test error")
 	}
-	successHandler := func(event Event[string]) (bool, error) {
+	successHandler := func(event mockEvent) (bool, error) {
 		successCalled = true
 		return true, nil
 	}
@@ -263,7 +259,7 @@ func TestPipeline_Process_OnSuccessNotCalledWhenHandlerFails(t *testing.T) {
 	pipeline.AddHandler(handler).OnSuccess(successHandler)
 	pipeline.OnError(func(err error) {})
 
-	event := &mockEvent{root: "test"}
+	event := mockEvent{root: "test"}
 	pipeline.Process(event)
 
 	if successCalled {
@@ -272,13 +268,13 @@ func TestPipeline_Process_OnSuccessNotCalledWhenHandlerFails(t *testing.T) {
 }
 
 func TestPipeline_Process_OnSuccessReturnsError(t *testing.T) {
-	pipeline := NewPipeline[string]()
+	pipeline := NewPipeline[mockEvent]()
 	var capturedError error
 
-	handler := func(event Event[string]) (bool, error) {
+	handler := func(event mockEvent) (bool, error) {
 		return true, nil
 	}
-	successHandler := func(event Event[string]) (bool, error) {
+	successHandler := func(event mockEvent) (bool, error) {
 		return true, errors.New("success error")
 	}
 
@@ -287,7 +283,7 @@ func TestPipeline_Process_OnSuccessReturnsError(t *testing.T) {
 		capturedError = err
 	})
 
-	event := &mockEvent{root: "test"}
+	event := mockEvent{root: "test"}
 	pipeline.Process(event)
 
 	if capturedError == nil {
@@ -299,28 +295,28 @@ func TestPipeline_Process_OnSuccessReturnsError(t *testing.T) {
 }
 
 func TestPipeline_Process_NoOnErrorHandler(t *testing.T) {
-	pipeline := NewPipeline[string]()
+	pipeline := NewPipeline[mockEvent]()
 
-	handler := func(event Event[string]) (bool, error) {
+	handler := func(event mockEvent) (bool, error) {
 		return false, errors.New("test error")
 	}
 
 	pipeline.AddHandler(handler)
-	event := &mockEvent{root: "test"}
+	event := mockEvent{root: "test"}
 	pipeline.Process(event)
 }
 
 func TestPipeline_Process_EmptyPipeline(t *testing.T) {
-	pipeline := NewPipeline[string]()
+	pipeline := NewPipeline[mockEvent]()
 	successCalled := false
 
-	successHandler := func(event Event[string]) (bool, error) {
+	successHandler := func(event mockEvent) (bool, error) {
 		successCalled = true
 		return true, nil
 	}
 
 	pipeline.OnSuccess(successHandler)
-	event := &mockEvent{root: "test"}
+	event := mockEvent{root: "test"}
 	pipeline.Process(event)
 
 	if !successCalled {
@@ -332,14 +328,14 @@ func TestPipeline_Chaining(t *testing.T) {
 	successCalled := false
 	errorHandled := false
 
-	pipeline := NewPipeline[string]().
-		AddHandler(func(event Event[string]) (bool, error) {
+	pipeline := NewPipeline[mockEvent]().
+		AddHandler(func(event mockEvent) (bool, error) {
 			return true, nil
 		}).
-		AddHandler(func(event Event[string]) (bool, error) {
+		AddHandler(func(event mockEvent) (bool, error) {
 			return true, nil
 		}).
-		OnSuccess(func(event Event[string]) (bool, error) {
+		OnSuccess(func(event mockEvent) (bool, error) {
 			successCalled = true
 			return true, nil
 		}).
@@ -347,7 +343,7 @@ func TestPipeline_Chaining(t *testing.T) {
 			errorHandled = true
 		})
 
-	event := &mockEvent{root: "test"}
+	event := mockEvent{root: "test"}
 	pipeline.Process(event)
 
 	if !successCalled {

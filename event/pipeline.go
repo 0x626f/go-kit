@@ -9,24 +9,24 @@ import "github.com/0x626f/go-kit/linkedlist"
 // The pipeline stops processing if any handler returns false or an error.
 // If all handlers complete successfully, the optional success handler is called.
 // Any errors encountered are passed to the optional error handler.
-type Pipeline[Root any] struct {
-	steps     *linkedlist.LinkedList[Handler[Root]]
-	onSuccess Handler[Root]
+type Pipeline[Event any] struct {
+	steps     *linkedlist.LinkedList[Handler[Event]]
+	onSuccess Handler[Event]
 	onError   ErrorHandler
 }
 
 // NewPipeline creates and returns a new Pipeline instance.
 // The pipeline is initialized with an empty list of handlers.
-func NewPipeline[Root any]() *Pipeline[Root] {
-	return &Pipeline[Root]{
-		steps: linkedlist.NewLinkedList[Handler[Root]](),
+func NewPipeline[Event any]() *Pipeline[Event] {
+	return &Pipeline[Event]{
+		steps: linkedlist.NewLinkedList[Handler[Event]](),
 	}
 }
 
 // AddHandler adds a handler to the end of the processing pipeline.
 // Handlers are executed in the order they are added.
 // Returns the pipeline instance for method chaining.
-func (pipeline *Pipeline[Root]) AddHandler(handler Handler[Root]) *Pipeline[Root] {
+func (pipeline *Pipeline[Event]) AddHandler(handler Handler[Event]) *Pipeline[Event] {
 	pipeline.steps.Push(handler)
 	return pipeline
 }
@@ -35,7 +35,7 @@ func (pipeline *Pipeline[Root]) AddHandler(handler Handler[Root]) *Pipeline[Root
 // complete successfully. If a success handler is already set, subsequent calls
 // are ignored (only the first success handler is used).
 // Returns the pipeline instance for method chaining.
-func (pipeline *Pipeline[Root]) OnSuccess(handler Handler[Root]) *Pipeline[Root] {
+func (pipeline *Pipeline[Event]) OnSuccess(handler Handler[Event]) *Pipeline[Event] {
 	if pipeline.onSuccess == nil {
 		pipeline.onSuccess = handler
 	}
@@ -46,7 +46,7 @@ func (pipeline *Pipeline[Root]) OnSuccess(handler Handler[Root]) *Pipeline[Root]
 // returns an error. If an error handler is already set, subsequent calls are
 // ignored (only the first error handler is used).
 // Returns the pipeline instance for method chaining.
-func (pipeline *Pipeline[Root]) OnError(handler ErrorHandler) *Pipeline[Root] {
+func (pipeline *Pipeline[Event]) OnError(handler ErrorHandler) *Pipeline[Event] {
 	if pipeline.onError == nil {
 		pipeline.onError = handler
 	}
@@ -57,7 +57,7 @@ func (pipeline *Pipeline[Root]) OnError(handler ErrorHandler) *Pipeline[Root] {
 // Processing stops if any handler returns false or an error.
 // If all handlers complete successfully, the success handler (if set) is called.
 // Any errors encountered during processing are passed to the error handler (if set).
-func (pipeline *Pipeline[Root]) Process(event Event[Root]) {
+func (pipeline *Pipeline[Event]) Process(event Event) {
 	for index := 0; index < pipeline.steps.Size(); index++ {
 		handler := pipeline.steps.At(index)
 
