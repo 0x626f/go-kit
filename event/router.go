@@ -39,7 +39,7 @@ func (router *Router[Event, ID]) AddReceiver(id ID, receiver Receiver[Event]) *R
 // are ignored (only the first resolver is used).
 // Returns the router instance for method chaining.
 func (router *Router[Event, ID]) SetResolver(resolver Resolver[Event, ID]) *Router[Event, ID] {
-	if resolver == nil {
+	if router.resolver == nil {
 		router.resolver = resolver
 	}
 	return router

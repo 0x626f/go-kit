@@ -88,8 +88,8 @@ func TestRouter_SetResolver_BugInImplementation(t *testing.T) {
 
 	router.SetResolver(resolver)
 
-	if router.resolver != nil {
-		t.Error("due to bug in SetResolver (checks 'if resolver == nil' instead of 'if router.resolver == nil'), resolver should not be set when passing non-nil resolver")
+	if router.resolver == nil {
+		t.Error("resolver is nil")
 	}
 }
 
