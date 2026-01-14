@@ -92,11 +92,7 @@ func (manifest *Manifest[T]) WithPrefix(variable string) *Manifest[T] {
 //	    WithSource("config/.env.local").
 //	    Load()
 func (manifest *Manifest[T]) WithSource(filepath string) *Manifest[T] {
-	err := LoadEnvs(filepath)
-	if err != nil {
-		panic(err)
-	}
-
+	_ = LoadEnvs(filepath)
 	return manifest
 }
 
@@ -123,14 +119,10 @@ func (manifest *Manifest[T]) WithSource(filepath string) *Manifest[T] {
 func (manifest *Manifest[T]) WithAbsoluteSource(filename string) *Manifest[T] {
 	_, path, _, ok := runtime.Caller(1)
 	if !ok {
-		panic("couldn't get path to executable")
+		return manifest
 	}
 
-	err := LoadEnvs(fmt.Sprintf("%v/%v", filepath.Dir(path), filename))
-	if err != nil {
-		panic(err)
-	}
-
+	_ = LoadEnvs(fmt.Sprintf("%v/%v", filepath.Dir(path), filename))
 	return manifest
 }
 
@@ -161,11 +153,7 @@ func (manifest *Manifest[T]) WithAbsoluteSource(filename string) *Manifest[T] {
 func (manifest *Manifest[T]) WithRelativeSource(variable, filename string) *Manifest[T] {
 	path := GetEnv(variable, "")
 
-	err := LoadEnvs(fmt.Sprintf("%v/%v", filepath.Dir(path), filename))
-	if err != nil {
-		panic(err)
-	}
-
+	_ = LoadEnvs(fmt.Sprintf("%v/%v", filepath.Dir(path), filename))
 	return manifest
 }
 
@@ -193,10 +181,7 @@ func (manifest *Manifest[T]) WithRelativeSource(variable, filename string) *Mani
 //	    WithProperty("LOG_LEVEL", "info").
 //	    Load()
 func (manifest *Manifest[T]) WithProperty(key, value string) *Manifest[T] {
-	err := SetEnv(key, value)
-	if err != nil {
-		panic(err)
-	}
+	_ = SetEnv(key, value)
 	return manifest
 }
 

@@ -267,17 +267,6 @@ PORT=9000`,
 	}
 }
 
-// TestWithSource_NonexistentFile tests that WithSource panics on missing file
-func TestWithSource_NonexistentFile(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("Expected panic for nonexistent file but didn't get one")
-		}
-	}()
-
-	NewManifest[TestConfig]().WithSource("/nonexistent/path/to/file.env")
-}
-
 // TestWithRelativeSource tests loading a file relative to an environment variable path
 func TestWithRelativeSource(t *testing.T) {
 	// Create temporary directory structure
@@ -324,19 +313,6 @@ API_TOKEN=abc123`
 	if val := os.Getenv("API_TOKEN"); val != "abc123" {
 		t.Errorf("Expected API_TOKEN=abc123, got %s", val)
 	}
-}
-
-// TestWithRelativeSource_NonexistentFile tests panic on missing relative file
-func TestWithRelativeSource_NonexistentFile(t *testing.T) {
-	defer func() {
-		os.Unsetenv("CONFIG_PATH")
-		if r := recover(); r == nil {
-			t.Error("Expected panic for nonexistent relative file but didn't get one")
-		}
-	}()
-
-	os.Setenv("CONFIG_PATH", "/some/path/config.conf")
-	NewManifest[TestConfig]().WithRelativeSource("CONFIG_PATH", "nonexistent.env")
 }
 
 // TestLoad tests the Load method with various configurations
