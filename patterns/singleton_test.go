@@ -1,22 +1,28 @@
 package patterns
 
 import (
-	"context"
+	"errors"
 	"sync"
 	"sync/atomic"
 	"testing"
 )
 
-// testStruct is a simple struct used for testing
+// testStruct is a simple struct used for testing the singleton pattern.
+// It contains basic fields to verify instance creation and initialization.
 type testStruct struct {
 	value string
 	id    int
 }
 
-// TestNewSingleton verifies that NewSingleton creates a valid singleton instance
+// TestNewSingleton verifies that NewSingleton creates a valid singleton manager.
+//
+// Test validates:
+//   - NewSingleton returns a non-nil Singleton manager
+//   - Constructor function is properly stored
+//   - Instance is not created eagerly (lazy initialization)
 func TestNewSingleton(t *testing.T) {
-	constructor := func(ctx context.Context) *testStruct {
-		return &testStruct{value: "test", id: 1}
+	constructor := func() (*testStruct, error) {
+		return &testStruct{value: "test", id: 1}, nil
 	}
 
 	singleton := NewSingleton(constructor)
@@ -34,10 +40,16 @@ func TestNewSingleton(t *testing.T) {
 	}
 }
 
-// TestSingletonInstance verifies that Instance() creates and returns an instance
+// TestSingletonInstance verifies that Instance() creates and returns an instance.
+//
+// Test validates:
+//   - Instance() creates the instance using the constructor
+//   - Returned instance is not nil
+//   - Instance fields are properly initialized with expected values
+//   - No error occurs during successful initialization
 func TestSingletonInstance(t *testing.T) {
-	constructor := func(ctx context.Context) *testStruct {
-		return &testStruct{value: "test", id: 42}
+	constructor := func() (*testStruct, error) {
+		return &testStruct{value: "test", id: 42}, nil
 	}
 
 	singleton := NewSingleton(constructor)
@@ -45,6 +57,10 @@ func TestSingletonInstance(t *testing.T) {
 
 	if instance == nil {
 		t.Fatal("Instance() returned nil")
+	}
+
+	if singleton.Err() != nil {
+		t.Fatalf("Unexpected error during initialization: %v", singleton.Err())
 	}
 
 	if instance.value != "test" {
@@ -56,10 +72,15 @@ func TestSingletonInstance(t *testing.T) {
 	}
 }
 
-// TestSingletonSameInstance verifies that multiple calls return the same instance
+// TestSingletonSameInstance verifies that multiple calls return the same instance.
+//
+// Test validates:
+//   - Multiple calls to Instance() return the exact same instance
+//   - Instance identity is preserved across all calls
+//   - Singleton pattern guarantees only one instance exists
 func TestSingletonSameInstance(t *testing.T) {
-	constructor := func(ctx context.Context) *testStruct {
-		return &testStruct{value: "test", id: 100}
+	constructor := func() (*testStruct, error) {
+		return &testStruct{value: "test", id: 100}, nil
 	}
 
 	singleton := NewSingleton(constructor)
@@ -81,17 +102,23 @@ func TestSingletonSameInstance(t *testing.T) {
 	}
 }
 
-// TestConstructorCalledOnce verifies that the constructor is called exactly once
+// TestConstructorCalledOnce verifies that the constructor is called exactly once.
+//
+// Test validates:
+//   - Constructor is invoked exactly once despite multiple Instance() calls
+//   - sync.Once mechanism properly prevents duplicate initialization
+//   - Lazy initialization occurs only on first Instance() call
 func TestConstructorCalledOnce(t *testing.T) {
 	var callCount atomic.Int32
 
-	constructor := func(ctx context.Context) *testStruct {
+	constructor := func() (*testStruct, error) {
 		callCount.Add(1)
-		return &testStruct{value: "test"}
+		return &testStruct{value: "test"}, nil
 	}
 
 	singleton := NewSingleton(constructor)
 
+	// Call Instance() multiple times
 	for i := 0; i < 10; i++ {
 		singleton.Instance()
 	}
@@ -101,13 +128,21 @@ func TestConstructorCalledOnce(t *testing.T) {
 	}
 }
 
-// TestSingletonConcurrency verifies thread-safety with concurrent access
+// TestSingletonConcurrency verifies thread-safety with concurrent access.
+//
+// Test validates:
+//   - Singleton is thread-safe when accessed from multiple goroutines
+//   - Constructor is called exactly once even under concurrent load
+//   - All goroutines receive the same instance
+//   - No race conditions occur during initialization
+//
+// Uses 100 concurrent goroutines to stress-test the implementation.
 func TestSingletonConcurrency(t *testing.T) {
 	var callCount atomic.Int32
 
-	constructor := func(ctx context.Context) *testStruct {
+	constructor := func() (*testStruct, error) {
 		callCount.Add(1)
-		return &testStruct{value: "concurrent", id: 999}
+		return &testStruct{value: "concurrent", id: 999}, nil
 	}
 
 	singleton := NewSingleton(constructor)
@@ -118,6 +153,7 @@ func TestSingletonConcurrency(t *testing.T) {
 
 	instances := make([]*testStruct, numGoroutines)
 
+	// Launch multiple goroutines to call Instance() concurrently
 	for i := 0; i < numGoroutines; i++ {
 		go func(index int) {
 			defer wg.Done()
@@ -127,10 +163,12 @@ func TestSingletonConcurrency(t *testing.T) {
 
 	wg.Wait()
 
+	// Verify constructor was called exactly once
 	if callCount.Load() != 1 {
 		t.Errorf("Constructor was called %d times, expected 1", callCount.Load())
 	}
 
+	// Verify all goroutines got the same instance
 	firstInstance := instances[0]
 	for i := 1; i < numGoroutines; i++ {
 		if instances[i] != firstInstance {
@@ -139,91 +177,13 @@ func TestSingletonConcurrency(t *testing.T) {
 	}
 }
 
-// TestWithContext verifies that context is passed to the constructor
-func TestWithContext(t *testing.T) {
-	type ctxKey string
-	const key ctxKey = "test-key"
-	const expectedValue = "test-value"
-
-	var receivedContext context.Context
-
-	constructor := func(ctx context.Context) *testStruct {
-		receivedContext = ctx
-		return &testStruct{value: "test"}
-	}
-
-	ctx := context.WithValue(context.Background(), key, expectedValue)
-	singleton := NewSingleton(constructor).WithContext(ctx)
-	singleton.Instance()
-
-	if receivedContext == nil {
-		t.Fatal("Constructor did not receive context")
-	}
-
-	value := receivedContext.Value(key)
-	if value != expectedValue {
-		t.Errorf("Expected context value '%s', got '%v'", expectedValue, value)
-	}
-}
-
-// TestWithContextNil verifies behavior when no context is set
-func TestWithContextNil(t *testing.T) {
-	var receivedContext context.Context
-
-	constructor := func(ctx context.Context) *testStruct {
-		receivedContext = ctx
-		return &testStruct{value: "test"}
-	}
-
-	singleton := NewSingleton(constructor)
-	singleton.Instance()
-
-	if receivedContext == nil {
-		t.Error("Expected non nil context when WithContext is not called")
-	}
-}
-
-// TestWithContextMethodChaining verifies that WithContext returns the singleton for chaining
-func TestWithContextMethodChaining(t *testing.T) {
-	constructor := func(ctx context.Context) *testStruct {
-		return &testStruct{value: "test"}
-	}
-
-	singleton := NewSingleton(constructor)
-	result := singleton.WithContext(context.Background())
-
-	if result != singleton {
-		t.Error("WithContext should return the same singleton instance for method chaining")
-	}
-}
-
-// TestWithContextAfterInstance verifies that setting context after Instance() has no effect
-func TestWithContextAfterInstance(t *testing.T) {
-	type ctxKey string
-	const key ctxKey = "test-key"
-
-	var receivedContext context.Context
-
-	constructor := func(ctx context.Context) *testStruct {
-		receivedContext = ctx
-		return &testStruct{value: "test"}
-	}
-
-	ctx1 := context.WithValue(context.Background(), key, "first")
-	ctx2 := context.WithValue(context.Background(), key, "second")
-
-	singleton := NewSingleton(constructor).WithContext(ctx1)
-	singleton.Instance()
-
-	singleton.WithContext(ctx2)
-
-	value := receivedContext.Value(key)
-	if value != "first" {
-		t.Errorf("Expected context from first WithContext call, got '%v'", value)
-	}
-}
-
-// TestMultipleTypes verifies that Singleton works with different types
+// TestMultipleTypes verifies that Singleton works with different types.
+//
+// Test validates:
+//   - Generic implementation supports different concrete types
+//   - Multiple singleton instances can coexist with different type parameters
+//   - Type safety is maintained for each singleton instance
+//   - Different types don't interfere with each other
 func TestMultipleTypes(t *testing.T) {
 	type stringContainer struct {
 		data string
@@ -233,12 +193,12 @@ func TestMultipleTypes(t *testing.T) {
 		data int
 	}
 
-	stringConstructor := func(ctx context.Context) *stringContainer {
-		return &stringContainer{data: "hello"}
+	stringConstructor := func() (*stringContainer, error) {
+		return &stringContainer{data: "hello"}, nil
 	}
 
-	intConstructor := func(ctx context.Context) *intContainer {
-		return &intContainer{data: 123}
+	intConstructor := func() (*intContainer, error) {
+		return &intContainer{data: 123}, nil
 	}
 
 	stringSingleton := NewSingleton(stringConstructor)
@@ -253,5 +213,149 @@ func TestMultipleTypes(t *testing.T) {
 
 	if num.data != 123 {
 		t.Errorf("Expected int 123, got %d", num.data)
+	}
+}
+
+// TestConstructorError verifies error handling when constructor fails.
+//
+// Test validates:
+//   - Constructor errors are properly captured and stored
+//   - Err() method returns the constructor's error
+//   - Instance() returns nil when constructor fails
+//   - Error is available immediately after Instance() call
+func TestConstructorError(t *testing.T) {
+	expectedErr := errors.New("initialization failed")
+
+	constructor := func() (*testStruct, error) {
+		return nil, expectedErr
+	}
+
+	singleton := NewSingleton(constructor)
+	instance := singleton.Instance()
+
+	if instance != nil {
+		t.Error("Instance should be nil when constructor returns error")
+	}
+
+	if singleton.Err() == nil {
+		t.Fatal("Err() should return the constructor error")
+	}
+
+	if singleton.Err() != expectedErr {
+		t.Errorf("Expected error %v, got %v", expectedErr, singleton.Err())
+	}
+}
+
+// TestErrorPersistence verifies that errors persist across multiple calls.
+//
+// Test validates:
+//   - Error is set once and persists for the singleton's lifetime
+//   - Multiple calls to Instance() don't change the error
+//   - Multiple calls to Err() return the same error
+//   - Constructor is still called only once even when it fails
+func TestErrorPersistence(t *testing.T) {
+	var callCount atomic.Int32
+	expectedErr := errors.New("persistent error")
+
+	constructor := func() (*testStruct, error) {
+		callCount.Add(1)
+		return nil, expectedErr
+	}
+
+	singleton := NewSingleton(constructor)
+
+	// Call Instance() multiple times
+	for i := 0; i < 5; i++ {
+		instance := singleton.Instance()
+		if instance != nil {
+			t.Errorf("Call %d: Instance should be nil", i)
+		}
+
+		err := singleton.Err()
+		if err != expectedErr {
+			t.Errorf("Call %d: Expected error %v, got %v", i, expectedErr, err)
+		}
+	}
+
+	if callCount.Load() != 1 {
+		t.Errorf("Constructor was called %d times, expected 1", callCount.Load())
+	}
+}
+
+// TestErrorConcurrency verifies error handling is thread-safe.
+//
+// Test validates:
+//   - Error handling works correctly under concurrent load
+//   - All goroutines see the same error
+//   - Constructor is called exactly once even when failing
+//   - No race conditions occur during error initialization
+func TestErrorConcurrency(t *testing.T) {
+	var callCount atomic.Int32
+	expectedErr := errors.New("concurrent error")
+
+	constructor := func() (*testStruct, error) {
+		callCount.Add(1)
+		return nil, expectedErr
+	}
+
+	singleton := NewSingleton(constructor)
+
+	const numGoroutines = 100
+	var wg sync.WaitGroup
+	wg.Add(numGoroutines)
+
+	errs := make([]error, numGoroutines)
+
+	// Launch multiple goroutines to call Instance() concurrently
+	for i := 0; i < numGoroutines; i++ {
+		go func(index int) {
+			defer wg.Done()
+			singleton.Instance()
+			errs[index] = singleton.Err()
+		}(i)
+	}
+
+	wg.Wait()
+
+	// Verify constructor was called exactly once
+	if callCount.Load() != 1 {
+		t.Errorf("Constructor was called %d times, expected 1", callCount.Load())
+	}
+
+	// Verify all goroutines got the same error
+	for i := 0; i < numGoroutines; i++ {
+		if errs[i] != expectedErr {
+			t.Errorf("Goroutine %d got error %v, expected %v", i, errs[i], expectedErr)
+		}
+	}
+}
+
+// TestNoErrorWhenNil verifies Err() returns nil for successful initialization.
+//
+// Test validates:
+//   - Err() returns nil when constructor succeeds
+//   - Successful initialization doesn't set any error
+//   - Error state remains nil across multiple Err() calls
+func TestNoErrorWhenNil(t *testing.T) {
+	constructor := func() (*testStruct, error) {
+		return &testStruct{value: "success"}, nil
+	}
+
+	singleton := NewSingleton(constructor)
+	instance := singleton.Instance()
+
+	if instance == nil {
+		t.Fatal("Instance should not be nil for successful initialization")
+	}
+
+	if singleton.Err() != nil {
+		t.Errorf("Err() should return nil for successful initialization, got %v", singleton.Err())
+	}
+
+	// Call Err() multiple times to ensure consistency
+	for i := 0; i < 3; i++ {
+		if err := singleton.Err(); err != nil {
+			t.Errorf("Call %d: Err() should return nil, got %v", i, err)
+		}
 	}
 }
