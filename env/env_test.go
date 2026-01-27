@@ -2059,3 +2059,118 @@ func TestTimeDuration_NestedStructs(t *testing.T) {
 		}
 	})
 }
+
+// TestPrefix_NotPrefixedStructs tests not prefixed structs
+func TestPrefix_NotPrefixedStructs(t *testing.T) {
+	defer func() {
+		os.Unsetenv("HOST")
+		os.Unsetenv("PORT")
+	}()
+
+	type ServerConfig struct {
+		Host string `env:"HOST" default:"localhost"`
+		Port int    `env:"PORT" default:"8080"`
+	}
+
+	type Config struct {
+		Server ServerConfig
+	}
+
+	t.Run("NotPrefixedDefaults", func(t *testing.T) {
+		config, err := FromEnvs[Config]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		if config.Server.Host != "localhost" {
+			t.Errorf("Server.Host = %v, want localhost", config.Server.Host)
+		}
+
+		if config.Server.Port != 8080 {
+			t.Errorf("Server.Port = %v, want 8080", config.Server.Port)
+		}
+	})
+
+	t.Run("NotPrefixedEnvOverrides", func(t *testing.T) {
+		os.Setenv("HOST", "test")
+		os.Setenv("PORT", "1000")
+
+		config, err := FromEnvs[Config]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		if config.Server.Host != "test" {
+			t.Errorf("Server.Host = %v, want test", config.Server.Host)
+		}
+
+		if config.Server.Port != 1000 {
+			t.Errorf("Server.Port = %v, want 1000", config.Server.Port)
+		}
+	})
+}
+
+// TestPrefix_NotPrefixedDeepStructs tests not prefixed deep structs
+func TestPrefix_NotPrefixedDeepStructs(t *testing.T) {
+	defer func() {
+		os.Unsetenv("SERVER_HOST")
+		os.Unsetenv("SERVER_PORT")
+		os.Unsetenv("SERVER_ALGO")
+	}()
+
+	type TLSConfig struct {
+		Algo string `env:"ALGO" default:"test0"`
+	}
+
+	type ServerConfig struct {
+		Host string `env:"HOST" default:"localhost"`
+		Port int    `env:"PORT" default:"8080"`
+		TLS  TLSConfig
+	}
+
+	type Config struct {
+		Server ServerConfig `env:"SERVER"`
+	}
+
+	t.Run("NotPrefixedDeepDefaults", func(t *testing.T) {
+		config, err := FromEnvs[Config]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		if config.Server.Host != "localhost" {
+			t.Errorf("Server.Host = %v, want localhost", config.Server.Host)
+		}
+
+		if config.Server.Port != 8080 {
+			t.Errorf("Server.Port = %v, want 8080", config.Server.Port)
+		}
+
+		if config.Server.TLS.Algo != "test0" {
+			t.Errorf("Server.TLS.Algo = %v, want test0", config.Server.TLS.Algo)
+		}
+	})
+
+	t.Run("NotPrefixedDeepEnvOverrides", func(t *testing.T) {
+		os.Setenv("SERVER_HOST", "test")
+		os.Setenv("SERVER_PORT", "1000")
+		os.Setenv("SERVER_ALGO", "test1")
+
+		config, err := FromEnvs[Config]()
+		if err != nil {
+			t.Fatalf("FromEnvs failed: %v", err)
+		}
+
+		if config.Server.Host != "test" {
+			t.Errorf("Server.Host = %v, want test", config.Server.Host)
+		}
+
+		if config.Server.Port != 1000 {
+			t.Errorf("Server.Port = %v, want 1000", config.Server.Port)
+		}
+
+		if config.Server.TLS.Algo != "test1" {
+			t.Errorf("Server.TLS.Algo = %v, want test1", config.Server.TLS.Algo)
+		}
+	})
+}

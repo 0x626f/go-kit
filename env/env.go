@@ -659,6 +659,11 @@ func addNestedPrefix(envName, prefix string) string {
 	if prefix == "" {
 		return envName
 	}
+
+	if envName == "" {
+		return prefix
+	}
+
 	return prefix + "_" + envName
 }
 
